@@ -1,164 +1,160 @@
 # System Design Labs
 
-> Learn System Design by building, experimenting, and breaking things.
+> Learn System Design by building the systems you use every day.
 
-Most System Design resources explain **what** a system looks like.
+Most System Design resources focus on architecture diagrams.
 
-This project focuses on **why** those design decisions exist.
+This repository takes a different approach.
 
-Instead of reading another architecture diagram, you can run a simplified implementation locally, generate traffic, inject failures, and observe how the system behaves.
+Instead of discussing how Twitter or YouTube *could* work, each lab implements a simplified but runnable version that demonstrates the core architectural ideas behind modern distributed systems.
 
-The goal is **not** to build production-ready services.
+Every project can be started locally with Docker Compose, explored, modified, and intentionally broken to better understand the trade-offs behind real-world system design.
 
-The goal is to understand the core ideas behind modern distributed systems through small, self-contained experiments.
+The goal is not to reproduce production infrastructure.
 
----
-
-## Philosophy
-
-Every project should answer questions like:
-
-* Why do we need Redis?
-* Why do we need Kafka?
-* Why can duplicate messages happen?
-* Why does cache improve latency?
-* Why can overselling occur?
-* Why is idempotency important?
-* Why do we need distributed locks?
-* Why is cursor pagination preferred over offset pagination?
-
-Reading about these concepts is helpful.
-
-Seeing them happen is much more memorable.
+The goal is to understand **why these systems are designed the way they are.**
 
 ---
 
-## What You'll Find
+# Projects
 
-Each lab focuses on a single System Design interview problem.
-
-Examples include:
-
-* URL Shortener
-* Rate Limiter
-* News Feed
-* Chat Service
-* Ticket Booking
-* File Storage
-* Web Crawler
-* Notification Service
-* Video Streaming
-* Ad Click Aggregator
-
-Every lab is intentionally kept small so the important ideas remain easy to understand.
-
----
-
-## Repository Structure
+Each lab is inspired by a classic System Design interview problem.
 
 ```text
-system-design-playground/
-├── url-shortener/
-├── rate-limiter/
-├── news-feed/
-├── ticket-booking/
-├── chat-service/
-├── file-storage/
+system-design-labs/
+
+├── twitter/
+├── youtube/
+├── whatsapp/
+├── dropbox/
+├── search-engine/
+├── uber/
 └── shared/
 ```
 
-Each lab follows the same structure:
+Rather than implementing every feature, each project focuses on the architectural decisions that make these systems scalable.
+
+---
+
+# What You'll Learn
+
+Across these labs you'll encounter topics such as:
+
+- Caching
+- Message Queues
+- Event-Driven Architecture
+- Background Workers
+- Object Storage
+- WebSockets
+- Search Indexes
+- Geo-spatial Queries
+- Feed Generation
+- Pagination
+- Idempotency
+- Retry Strategies
+- Rate Limiting
+- Database Partitioning
+- Horizontal Scaling
+- Eventual Consistency
+
+Instead of learning these concepts in isolation, you'll see how they work together inside real systems.
+
+---
+
+# Learning Philosophy
+
+Every project begins with a deceptively simple question.
+
+For example:
+
+- How does Twitter generate your home timeline?
+- How does YouTube process a newly uploaded video?
+- How does Dropbox synchronize files across devices?
+- How does WhatsApp guarantee message delivery?
+- How does Uber find nearby drivers?
+
+By implementing simplified versions yourself, you'll discover why distributed systems rely on caches, asynchronous processing, partitioning, replication, and many other techniques.
+
+---
+
+# Project Structure
+
+Each lab follows a similar layout.
 
 ```text
-lab/
+twitter/
+
 ├── README.md
 ├── design.md
-├── app/
+├── services/
 ├── simulation/
 ├── tests/
 └── docker-compose.yml
 ```
 
----
-
-## What Each Lab Demonstrates
-
-Each implementation highlights one or more core System Design concepts, such as:
-
-* Caching
-* Message Queues
-* Event-Driven Architecture
-* Idempotency
-* Retry Strategies
-* Optimistic Locking
-* Distributed Locks
-* Horizontal Scaling
-* Database Partitioning
-* Consistency Trade-offs
-* Background Workers
-* Pagination Strategies
-* Rate Limiting
-
-The implementation is intentionally simplified so you can focus on the architectural ideas instead of production complexity.
+Every project is designed to run locally while preserving the interactions between multiple services.
 
 ---
 
-## Design Principles
+# Design Principles
 
 Every lab is:
 
-* Small enough to understand in a few hours
-* Runnable on a single machine using Docker Compose
-* Structured like a distributed system with multiple services
-* Easy to modify and experiment with
-* Focused on one important design problem
+- Runnable on a single machine
+- Composed of multiple microservices
+- Small enough to understand in a few hours
+- Easy to modify and experiment with
+- Focused on architectural ideas instead of production complexity
 
-The emphasis is on understanding **building blocks**, not recreating large-scale production systems.
-
----
-
-## Learning Approach
-
-For every case study:
-
-1. Understand the requirements.
-2. Design the architecture.
-3. Build a minimal working implementation.
-4. Generate traffic and observe the behavior.
-5. Introduce failures and edge cases.
-6. Improve the design.
-7. Reflect on the trade-offs.
+These are educational implementations, not production systems.
 
 ---
 
-## Who Is This For?
+# How to Learn
+
+For each lab:
+
+1. Understand the product requirements.
+2. Design the system.
+3. Build a minimal implementation.
+4. Generate realistic traffic.
+5. Observe system behavior.
+6. Introduce failures.
+7. Iterate on the design.
+
+The emphasis is not on writing thousands of lines of code.
+
+It's on understanding why each architectural decision exists.
+
+---
+
+# Who Is This For?
 
 This repository is intended for:
 
-* Software engineers preparing for System Design interviews
-* Backend engineers learning distributed systems
-* Students who prefer learning by building
-* Anyone curious about how large-scale systems work
+- Software engineers preparing for System Design interviews
+- Backend engineers interested in distributed systems
+- Students who learn best by building
+- Anyone curious about how internet-scale systems work
 
 ---
 
-## Disclaimer
+# Related Project
 
-These implementations are educational toy systems.
+This repository focuses on **application systems**.
 
-Many production concerns are intentionally omitted, including security, observability, deployment, multi-region replication, compliance, and operational tooling.
+A companion repository, **Infra Lab**, explores the infrastructure behind these applications, including traffic management, deployment, resource delivery, observability, and platform services.
 
-The objective is to understand the fundamental concepts that appear repeatedly in real-world distributed systems and technical interviews.
-
----
-
-## Contributing
-
-Suggestions, improvements, and new lab ideas are always welcome.
-
-If there's a System Design problem you'd like to see implemented, feel free to open an issue or submit a pull request.
+Together they demonstrate both the application layer and the infrastructure layer of modern distributed systems.
 
 ---
 
-> *"The best way to understand a distributed system is to build one, break it, and fix it."*
+# Disclaimer
 
+These projects intentionally omit many production concerns, including security, compliance, authentication, operational tooling, and large-scale optimizations.
+
+Their purpose is educational: to illustrate the architectural ideas that appear repeatedly in real-world distributed systems and technical interviews.
+
+---
+
+> *"The best way to understand a distributed system is to build one."*
