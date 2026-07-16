@@ -7,7 +7,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.database import engine, get_db
-from app.models import Base, Like, Tweet
+from app.models import Base, Like, OutboxEvent, Tweet
 from app.schemas import LikeOut, TweetCreate, TweetOut, TweetUpdate
 
 
@@ -20,6 +20,22 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 app = FastAPI(title="tweet-service", lifespan=lifespan)
 
 
+def _enqueue_tweet_created(db: Session, tweet: Tweet) -> None:
+    """Write the outbox row in the same transaction as the tweet itself."""
+    db.add(
+        OutboxEvent(
+            event_type="tweet_created",
+            payload={
+                "tweet_id": tweet.id,
+                "user_id": tweet.user_id,
+                "content": tweet.content,
+                "parent_tweet_id": tweet.parent_tweet_id,
+                "created_at": tweet.created_at.isoformat(),
+            },
+        )
+    )
+
+
 @app.get("/health")
 def health() -> dict[str, str]:
     return {"status": "ok"}
@@ -29,6 +45,8 @@ def health() -> dict[str, str]:
 def create_tweet(tweet_in: TweetCreate, db: Session = Depends(get_db)) -> Tweet:
     tweet = Tweet(user_id=tweet_in.user_id, content=tweet_in.content)
     db.add(tweet)
+    db.flush()
+    _enqueue_tweet_created(db, tweet)
     db.commit()
     db.refresh(tweet)
     return tweet
@@ -77,6 +95,8 @@ def create_reply(
         parent_tweet_id=tweet_id,
     )
     db.add(reply)
+    db.flush()
+    _enqueue_tweet_created(db, reply)
     db.commit()
     db.refresh(reply)
     return reply
