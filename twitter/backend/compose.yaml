@@ -1,5 +1,5 @@
 services:
-  db:
+  tweet-db:
     image: postgres:16-alpine
     environment:
       POSTGRES_USER: postgres
@@ -18,12 +18,39 @@ services:
   tweet-service:
     build: ./services/tweet-service
     environment:
-      DATABASE_URL: postgresql+psycopg://postgres:postgres@db:5432/tweets
+      DATABASE_URL: postgresql+psycopg://postgres:postgres@tweet-db:5432/tweets
     ports:
       - "8000:8000"
     depends_on:
-      db:
+      tweet-db:
+        condition: service_healthy
+
+  user-db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: users
+    ports:
+      - "5433:5432"
+    volumes:
+      - user_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 2s
+      timeout: 5s
+      retries: 10
+
+  user-service:
+    build: ./services/user-service
+    environment:
+      DATABASE_URL: postgresql+psycopg://postgres:postgres@user-db:5432/users
+    ports:
+      - "8001:8000"
+    depends_on:
+      user-db:
         condition: service_healthy
 
 volumes:
   tweet_db_data:
+  user_db_data:
