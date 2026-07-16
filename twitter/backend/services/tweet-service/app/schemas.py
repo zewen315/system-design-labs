@@ -16,6 +16,15 @@ class TweetOut(BaseModel):
     id: int
     user_id: int
     content: str
+    parent_tweet_id: int | None
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class LikeOut(BaseModel):
+    tweet_id: int
+    user_id: int
     created_at: datetime
 
     model_config = {"from_attributes": True}

@@ -3,11 +3,12 @@ from contextlib import asynccontextmanager
 
 from fastapi import Depends, FastAPI, HTTPException, Query, Response
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.database import engine, get_db
-from app.models import Base, Tweet
-from app.schemas import TweetCreate, TweetOut, TweetUpdate
+from app.models import Base, Like, Tweet
+from app.schemas import LikeOut, TweetCreate, TweetOut, TweetUpdate
 
 
 @asynccontextmanager
@@ -62,6 +63,72 @@ def delete_tweet(tweet_id: int, db: Session = Depends(get_db)) -> Response:
     db.delete(tweet)
     db.commit()
     return Response(status_code=204)
+
+
+@app.post("/tweets/{tweet_id}/replies", response_model=TweetOut, status_code=201)
+def create_reply(
+    tweet_id: int, reply_in: TweetCreate, db: Session = Depends(get_db)
+) -> Tweet:
+    if db.get(Tweet, tweet_id) is None:
+        raise HTTPException(status_code=404, detail="Tweet not found")
+    reply = Tweet(
+        user_id=reply_in.user_id,
+        content=reply_in.content,
+        parent_tweet_id=tweet_id,
+    )
+    db.add(reply)
+    db.commit()
+    db.refresh(reply)
+    return reply
+
+
+@app.get("/tweets/{tweet_id}/replies", response_model=list[TweetOut])
+def list_replies(
+    tweet_id: int,
+    limit: int = Query(default=5, ge=1, le=100),
+    offset: int = Query(default=0, ge=0),
+    db: Session = Depends(get_db),
+) -> list[Tweet]:
+    stmt = (
+        select(Tweet)
+        .where(Tweet.parent_tweet_id == tweet_id)
+        .order_by(Tweet.created_at.asc())
+        .limit(limit)
+        .offset(offset)
+    )
+    return list(db.scalars(stmt))
+
+
+@app.post("/tweets/{tweet_id}/likes/{user_id}", response_model=LikeOut, status_code=201)
+def like_tweet(tweet_id: int, user_id: int, db: Session = Depends(get_db)) -> Like:
+    if db.get(Tweet, tweet_id) is None:
+        raise HTTPException(status_code=404, detail="Tweet not found")
+
+    like = Like(tweet_id=tweet_id, user_id=user_id)
+    db.add(like)
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(status_code=409, detail="Tweet already liked")
+    db.refresh(like)
+    return like
+
+
+@app.delete("/tweets/{tweet_id}/likes/{user_id}", status_code=204)
+def unlike_tweet(tweet_id: int, user_id: int, db: Session = Depends(get_db)) -> Response:
+    like = db.get(Like, (tweet_id, user_id))
+    if like is None:
+        raise HTTPException(status_code=404, detail="Like not found")
+    db.delete(like)
+    db.commit()
+    return Response(status_code=204)
+
+
+@app.get("/tweets/{tweet_id}/likes", response_model=list[LikeOut])
+def list_likes(tweet_id: int, db: Session = Depends(get_db)) -> list[Like]:
+    stmt = select(Like).where(Like.tweet_id == tweet_id)
+    return list(db.scalars(stmt))
 
 
 @app.get("/users/{user_id}/tweets", response_model=list[TweetOut])
