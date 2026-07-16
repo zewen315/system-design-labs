@@ -34,6 +34,7 @@ Takeaways:
 
 tweet-service:
 * POST /tweets
+* GET /tweets?ids={id}&ids={id}... (batch fetch)
 * GET /tweets/{id}
 * PATCH /tweets/{id}
 * DELETE /tweets/{id}
@@ -53,6 +54,10 @@ user-service:
 * DELETE /users/{follower_id}/following/{followee_id}
 * GET /users/{id}/followers
 * GET /users/{id}/following
+* GET /health
+
+timeline-service:
+* GET /users/{id}/timeline
 * GET /health
 
 ## Diagram
@@ -102,5 +107,15 @@ The fix is the **transactional outbox pattern**:
 * A separate **relay process** — same codebase/image as `tweet-service`, different entrypoint, not part of the API — polls `outbox WHERE published_at IS NULL`, publishes each row's payload to the Redis Stream, and marks it published. It claims rows with `SELECT ... FOR UPDATE SKIP LOCKED`, so multiple relay replicas can run concurrently without double-publishing or blocking on each other.
 * This yields **at-least-once delivery, not exactly-once**: if the relay publishes to Redis but crashes before committing `published_at`, the same event republishes on restart. Whatever consumes these events downstream (the fan-out worker that writes into follower feeds) has to treat re-processing the same `tweet_id` as safe — e.g. adding to a Redis sorted set is naturally idempotent, since re-adding an existing member just updates its score instead of duplicating it.
 
-The Redis container backing the queue is named `stream-redis`, not just `redis` — deliberately, because it's expected to stay a *single-purpose* container. When `timeline-service` is built, its precomputed per-user feeds will most naturally live in Redis Sorted Sets (tweet IDs scored by timestamp, so a feed is always ranked and cheap to paginate) — a different Redis data structure than the Stream, but nothing stops it from technically living in the same container. It shouldn't: the Stream is legitimately shared infrastructure (a queue connects a producer and a consumer by definition), but a precomputed feed is `timeline-service`'s own private data, the same category of thing `tweet-db`/`user-db` already taught us to keep separate per service. Plan is a second container, `timeline-redis`, once that's built — `stream-redis` stays the queue only.
+The Redis container backing the queue is named `stream-redis`, not just `redis` — deliberately, because it's meant to stay a *single-purpose* container. `timeline-service`'s precomputed per-user feeds live in Redis Sorted Sets (tweet IDs scored by their `created_at` timestamp, so a feed is always ranked and cheap to paginate — `ZREVRANGE offset..offset+limit-1` is the Sorted Set equivalent of SQL's `ORDER BY ... DESC LIMIT/OFFSET`) — a different Redis data structure than the Stream, but nothing stops it from technically living in the same container. It shouldn't: the Stream is legitimately shared infrastructure (a queue connects a producer and a consumer by definition), but a precomputed feed is `timeline-service`'s own private data, the same category of thing `tweet-db`/`user-db` already taught us to keep separate per service. So `timeline-service` gets its own container, `timeline-redis` — `stream-redis` stays the queue only.
+
+### The fan-out worker: consumer groups, and an honest gap around retries
+
+`timeline-service` has no database of its own — it's a thin layer over two things: a **fan-out worker** (`app/fanout_worker.py`, same image as the API, different entrypoint — the same trick as `tweet-outbox-relay`) that consumes `tweet-events` and writes into follower feeds, and the read API (`GET /users/{id}/timeline`) that reads them back out.
+
+The worker joins `stream-redis`'s stream as a **consumer group** (`XGROUP CREATE ... id="0" MKSTREAM`), which is what gives it "resume where I left off" behavior across restarts — the group tracks its own last-delivered position, independent of any single consumer process. For each `tweet_created` event, it calls `user-service`'s `GET /users/{author_id}/followers`, then `ZADD`s the tweet ID into `timeline:{follower_id}` for every follower (scored by the tweet's timestamp), trimming each feed to the most recent `feed_max_size` (800, matching real Twitter's historical home-timeline cap) with `ZREMRANGEBYRANK`. Only after that succeeds does it `XACK` the message.
+
+That last point is where a real gap lives: if `fan_out_tweet` raises (a transient `user-service` failure, say) or the worker crashes mid-processing, the message is left unacknowledged in the consumer group's pending list — but this worker never reclaims it. A production consumer would periodically run `XAUTOCLAIM` to find messages that have been pending too long and retry them; without that, a failed message here just sits stuck, unprocessed, forever. Deliberately left as the simple version for now rather than pretending it's solved — a natural next lesson on retry/redelivery semantics.
+
+One consequence of this architecture worth noting explicitly: **`GET /tweets?ids=...` (a small batch-fetch endpoint added to `tweet-service`) exists specifically to avoid an N+1 problem here.** The Sorted Set only stores tweet IDs, not content — every timeline read needs to hydrate those IDs into full tweets from `tweet-service`. Fetching them one-by-one would mean a 20-tweet timeline costing 20 HTTP round trips; the batch endpoint turns that into one.
 

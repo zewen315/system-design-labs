@@ -52,6 +52,16 @@ def create_tweet(tweet_in: TweetCreate, db: Session = Depends(get_db)) -> Tweet:
     return tweet
 
 
+@app.get("/tweets", response_model=list[TweetOut])
+def list_tweets_by_ids(
+    ids: list[int] = Query(default=[]), db: Session = Depends(get_db)
+) -> list[Tweet]:
+    if not ids:
+        return []
+    stmt = select(Tweet).where(Tweet.id.in_(ids))
+    return list(db.scalars(stmt))
+
+
 @app.get("/tweets/{tweet_id}", response_model=TweetOut)
 def get_tweet(tweet_id: int, db: Session = Depends(get_db)) -> Tweet:
     tweet = db.get(Tweet, tweet_id)

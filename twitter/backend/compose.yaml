@@ -73,6 +73,43 @@ services:
       user-db:
         condition: service_healthy
 
+  timeline-redis:
+    image: redis:7-alpine
+    ports:
+      - "6380:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 2s
+      timeout: 5s
+      retries: 10
+
+  timeline-service:
+    build: ./services/timeline-service
+    environment:
+      STREAM_REDIS_URL: redis://stream-redis:6379/0
+      TIMELINE_REDIS_URL: redis://timeline-redis:6379/0
+      USER_SERVICE_URL: http://user-service:8000
+      TWEET_SERVICE_URL: http://tweet-service:8000
+    ports:
+      - "8002:8000"
+    depends_on:
+      timeline-redis:
+        condition: service_healthy
+
+  timeline-fanout-worker:
+    build: ./services/timeline-service
+    command: ["uv", "run", "python", "-m", "app.fanout_worker"]
+    environment:
+      STREAM_REDIS_URL: redis://stream-redis:6379/0
+      TIMELINE_REDIS_URL: redis://timeline-redis:6379/0
+      USER_SERVICE_URL: http://user-service:8000
+      TWEET_SERVICE_URL: http://tweet-service:8000
+    depends_on:
+      stream-redis:
+        condition: service_healthy
+      timeline-redis:
+        condition: service_healthy
+
 volumes:
   tweet_db_data:
   user_db_data:
