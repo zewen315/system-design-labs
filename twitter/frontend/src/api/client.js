@@ -61,11 +61,27 @@ export function getRandomUsers({ limit = 10, exclude = [] } = {}) {
 }
 
 // tweet-service
-export function createTweet({ userId, content }) {
+export function createTweet({ userId, content, imageUrl }) {
   return request(GATEWAY.tweet, "/tweets", {
     method: "POST",
-    body: JSON.stringify({ user_id: userId, content }),
+    body: JSON.stringify({ user_id: userId, content, image_url: imageUrl }),
   });
+}
+
+export function getTweetImageUploadUrl(contentType) {
+  return request(GATEWAY.tweet, "/tweets/image-upload-url", {
+    method: "POST",
+    body: JSON.stringify({ content_type: contentType }),
+  });
+}
+
+export async function uploadToPresignedUrl(url, blob) {
+  const res = await fetch(url, {
+    method: "PUT",
+    headers: { "Content-Type": blob.type },
+    body: blob,
+  });
+  if (!res.ok) throw new Error(`Image upload failed with status ${res.status}`);
 }
 
 export function getTweet(tweetId) {
@@ -84,10 +100,10 @@ export function listUserLikes(userId, { limit = 20, offset = 0 } = {}) {
   return request(GATEWAY.tweet, `/users/${userId}/likes?limit=${limit}&offset=${offset}`);
 }
 
-export function createReply(tweetId, { userId, content }) {
+export function createReply(tweetId, { userId, content, imageUrl }) {
   return request(GATEWAY.tweet, `/tweets/${tweetId}/replies`, {
     method: "POST",
-    body: JSON.stringify({ user_id: userId, content }),
+    body: JSON.stringify({ user_id: userId, content, image_url: imageUrl }),
   });
 }
 

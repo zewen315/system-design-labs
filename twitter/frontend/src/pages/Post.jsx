@@ -4,6 +4,7 @@ import { createReply, getTweet, listReplies } from "../api/client";
 import { useUser } from "../context/UserContext";
 import ComposeBox from "../components/ComposeBox";
 import TweetCard from "../components/TweetCard";
+import ReplyRow from "../components/ReplyRow";
 import { ArrowLeftIcon } from "../components/icons";
 
 const REPLIES_PAGE_SIZE = 20;
@@ -62,8 +63,8 @@ export default function Post() {
     }
   }
 
-  async function handleReply(content) {
-    const reply = await createReply(tweetId, { userId: currentUser.id, content });
+  async function handleReply(content, imageUrl) {
+    const reply = await createReply(tweetId, { userId: currentUser.id, content, imageUrl });
     setReplies((prev) => [reply, ...prev]);
     setTweet((prev) => (prev ? { ...prev, reply_count: prev.reply_count + 1 } : prev));
   }
@@ -80,13 +81,13 @@ export default function Post() {
         <h2>Post</h2>
       </div>
 
-      <TweetCard tweet={tweet} clickable={false} />
+      <TweetCard tweet={tweet} clickable={false} large />
 
       <ComposeBox placeholder="Post your reply" buttonLabel="Reply" onSubmit={handleReply} />
 
-      <div className="tweet-list">
+      <div className="reply-list">
         {replies.map((reply) => (
-          <TweetCard key={reply.id} tweet={reply} />
+          <ReplyRow key={reply.id} tweet={reply} />
         ))}
       </div>
 

@@ -14,7 +14,7 @@ export default function IdentityGate() {
   const [suggestionsLoading, setSuggestionsLoading] = useState(true);
 
   useEffect(() => {
-    getRandomUsers({ limit: 6 })
+    getRandomUsers({ limit: 3 })
       .then(setSuggestions)
       .catch(() => setSuggestions([]))
       .finally(() => setSuggestionsLoading(false));
@@ -53,7 +53,7 @@ export default function IdentityGate() {
       <div className="identity-card">
         <h1>Twitter Lab</h1>
         <p className="identity-subtitle">
-          No real auth here — pick an existing username or create a new one.
+          No real auth here — pick an existing user ID or create a new one.
         </p>
 
         <div className="identity-tabs">
@@ -76,30 +76,33 @@ export default function IdentityGate() {
         {mode === "existing" ? (
           <>
             {!suggestionsLoading && suggestions.length > 0 && (
-              <ul className="identity-suggestions">
-                {suggestions.map((user) => (
-                  <li key={user.id}>
-                    <button type="button" onClick={() => setCurrentUser(user)}>
-                      <Avatar user={user} size={36} />
-                      <span className="identity-suggestions__names">
-                        <strong>{user.display_name}</strong>
-                        <span>@{user.username}</span>
-                      </span>
-                    </button>
-                  </li>
-                ))}
-              </ul>
+              <>
+                <p className="identity-random-note">3 users, picked at random:</p>
+                <ul className="identity-suggestions">
+                  {suggestions.map((user) => (
+                    <li key={user.id}>
+                      <button type="button" onClick={() => setCurrentUser(user)}>
+                        <Avatar user={user} size={36} />
+                        <span className="identity-suggestions__names">
+                          <strong>{user.display_name}</strong>
+                          <span>@{user.username}</span>
+                        </span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </>
             )}
 
             <p className="identity-divider">
               {suggestionsLoading || suggestions.length > 0
-                ? "Or enter a username directly"
-                : "No users yet — enter a username"}
+                ? "Or enter a user ID directly"
+                : "No users yet — enter a user ID"}
             </p>
 
             <form onSubmit={handleExisting}>
               <label>
-                Username
+                User ID
                 <input
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
@@ -115,7 +118,7 @@ export default function IdentityGate() {
         ) : (
           <form onSubmit={handleCreate}>
             <label>
-              Username
+              User ID
               <input
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}

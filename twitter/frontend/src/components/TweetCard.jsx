@@ -1,46 +1,12 @@
-import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { likeTweet, unlikeTweet } from "../api/client";
 import { useAuthor } from "../hooks/useAuthor";
-import { useUser } from "../context/UserContext";
+import { useLikeToggle } from "../hooks/useLikeToggle";
+import { timeAgo } from "../utils/timeAgo";
 
-function timeAgo(iso) {
-  const minutes = Math.floor((Date.now() - new Date(iso).getTime()) / 60000);
-  if (minutes < 1) return "just now";
-  if (minutes < 60) return `${minutes}m`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}h`;
-  return `${Math.floor(hours / 24)}d`;
-}
-
-export default function TweetCard({ tweet, clickable = true }) {
+export default function TweetCard({ tweet, clickable = true, large = false }) {
   const author = useAuthor(tweet.user_id);
-  const { currentUser } = useUser();
   const navigate = useNavigate();
-  const [liked, setLiked] = useState(false);
-  const [likeCount, setLikeCount] = useState(tweet.like_count);
-  const [pending, setPending] = useState(false);
-
-  async function toggleLike(e) {
-    e.stopPropagation();
-    if (!currentUser || pending) return;
-    setPending(true);
-    try {
-      if (liked) {
-        await unlikeTweet(tweet.id, currentUser.id);
-        setLiked(false);
-        setLikeCount((c) => c - 1);
-      } else {
-        await likeTweet(tweet.id, currentUser.id);
-        setLiked(true);
-        setLikeCount((c) => c + 1);
-      }
-    } catch {
-      // conflict (already liked/unliked, e.g. from another tab) — leave state as-is
-    } finally {
-      setPending(false);
-    }
-  }
+  const { liked, likeCount, pending, toggleLike } = useLikeToggle(tweet);
 
   function handleCardClick() {
     if (clickable) navigate(`/tweets/${tweet.id}`);
@@ -63,7 +29,13 @@ export default function TweetCard({ tweet, clickable = true }) {
         <span className="tweet-card__time">{timeAgo(tweet.created_at)}</span>
       </div>
 
-      <p className="tweet-card__content">{tweet.content}</p>
+      <p className={large ? "tweet-card__content tweet-card__content--large" : "tweet-card__content"}>
+        {tweet.content}
+      </p>
+
+      {tweet.image_url && (
+        <img src={tweet.image_url} alt="" className="tweet-card__image" />
+      )}
 
       <div className="tweet-card__actions">
         <span className="tweet-card__stat">

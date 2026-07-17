@@ -33,8 +33,8 @@ export default function Timeline() {
     load();
   }, [load]);
 
-  async function handlePost(content) {
-    await createTweet({ userId: currentUser.id, content });
+  async function handlePost(content, imageUrl) {
+    await createTweet({ userId: currentUser.id, content, imageUrl });
   }
 
   return (
