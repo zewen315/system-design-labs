@@ -74,6 +74,7 @@ services:
     build: ./services/user-service
     environment:
       DATABASE_URL: postgresql+psycopg://postgres:postgres@user-db:5432/users
+      TIMELINE_SERVICE_URL: http://timeline-service:8000
       MINIO_INTERNAL_URL: http://minio:9000
       MINIO_PUBLIC_URL: http://localhost:8080
       MINIO_ACCESS_KEY: minioadmin

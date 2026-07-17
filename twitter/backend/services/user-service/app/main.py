@@ -2,12 +2,14 @@ from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 
+import httpx
 from fastapi import Depends, FastAPI, HTTPException, Query, Response
 from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app import storage
+from app.config import settings
 from app.database import engine, get_db
 from app.models import Base, Follow, User
 from app.schemas import (
@@ -161,6 +163,19 @@ def follow_user(
         db.rollback()
         raise HTTPException(status_code=409, detail="Already following this user")
     db.refresh(follow)
+
+    # Best-effort: fan-out-on-write never backfills, so without this a fresh
+    # follow stays invisible until the followee's next tweet. A backfill
+    # failure (timeline-service down, network hiccup) shouldn't fail the
+    # follow itself — worst case, it behaves like backfill was never added.
+    try:
+        httpx.post(
+            f"{settings.timeline_service_url}/users/{follower_id}/backfill/{followee_id}",
+            timeout=5.0,
+        )
+    except httpx.HTTPError:
+        pass
+
     return follow
 
 
