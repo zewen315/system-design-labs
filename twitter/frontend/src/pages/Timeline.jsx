@@ -60,13 +60,7 @@ export default function Timeline() {
         </button>
       </div>
 
-      {tab === "followed" ? (
-        <p className="timeline-hint">
-          Fed by fan-out-on-write (tweet-service → outbox → Redis Stream → fan-out worker → your
-          followees' feeds), so it won't include your own tweets — following is directed, and
-          self-follows are blocked. Check your profile to see what you've posted.
-        </p>
-      ) : (
+      {tab === "suggested" && (
         <p className="timeline-hint">
           A sample of tweets from people you don't follow — good for finding someone new.
         </p>
