@@ -41,7 +41,7 @@ export default function Timeline() {
     <div className="page">
       <h2>Timeline</h2>
 
-      <div className="timeline-tabs">
+      <div className="profile-tabs">
         <button className={tab === "followed" ? "active" : ""} onClick={() => setTab("followed")}>
           Followed
         </button>

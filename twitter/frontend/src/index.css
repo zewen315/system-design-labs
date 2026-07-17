@@ -169,6 +169,39 @@ input {
   margin: 0 0 16px;
 }
 
+.post-header {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  margin-bottom: 16px;
+}
+
+.post-header h2 {
+  margin: 0;
+}
+
+.post-back-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  border: none;
+  border-radius: 50%;
+  background: none;
+  color: #18181b;
+}
+
+.post-back-button:hover {
+  background: #f4f4f5;
+}
+
+.post-back-button__icon {
+  width: 20px;
+  height: 20px;
+}
+
 .error {
   color: #dc2626;
 }
@@ -377,28 +410,6 @@ input {
 
 /* Timeline */
 
-.timeline-tabs {
-  display: flex;
-  gap: 8px;
-  margin: 4px 0 4px;
-}
-
-.timeline-tabs button {
-  padding: 8px 16px;
-  border: 1px solid #d4d4d8;
-  border-radius: 999px;
-  background: none;
-  color: #52525b;
-  font-weight: 600;
-  font-size: 0.85rem;
-}
-
-.timeline-tabs button.active {
-  border-color: #3b82f6;
-  color: #1e3a8a;
-  background: #eff6ff;
-}
-
 .timeline-hint {
   color: #71717a;
   font-size: 0.85rem;
@@ -433,6 +444,15 @@ input {
   padding: 16px;
   border: 1px solid #e4e4e7;
   border-radius: 14px;
+}
+
+.tweet-card--clickable {
+  cursor: pointer;
+  transition: background 120ms ease;
+}
+
+.tweet-card--clickable:hover {
+  background: #f4f4f5;
 }
 
 .tweet-card__header {
@@ -489,14 +509,9 @@ input {
   color: #e11d48;
 }
 
-.tweet-card__replies {
-  margin-top: 14px;
-  padding-top: 14px;
-  border-top: 1px solid #e4e4e7;
-}
-
-.tweet-card__replies .tweet-list {
-  margin-top: 10px;
+.tweet-card__stat {
+  color: #71717a;
+  font-size: 0.85rem;
 }
 
 .tweet-card__load-more {

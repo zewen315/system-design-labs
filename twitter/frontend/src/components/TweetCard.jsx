@@ -1,11 +1,8 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
-import { createReply, likeTweet, listReplies, unlikeTweet } from "../api/client";
+import { Link, useNavigate } from "react-router-dom";
+import { likeTweet, unlikeTweet } from "../api/client";
 import { useAuthor } from "../hooks/useAuthor";
 import { useUser } from "../context/UserContext";
-import ComposeBox from "./ComposeBox";
-
-const REPLIES_PAGE_SIZE = 5;
 
 function timeAgo(iso) {
   const minutes = Math.floor((Date.now() - new Date(iso).getTime()) / 60000);
@@ -16,20 +13,16 @@ function timeAgo(iso) {
   return `${Math.floor(hours / 24)}d`;
 }
 
-export default function TweetCard({ tweet }) {
+export default function TweetCard({ tweet, clickable = true }) {
   const author = useAuthor(tweet.user_id);
   const { currentUser } = useUser();
+  const navigate = useNavigate();
   const [liked, setLiked] = useState(false);
   const [likeCount, setLikeCount] = useState(tweet.like_count);
   const [pending, setPending] = useState(false);
 
-  const [repliesOpen, setRepliesOpen] = useState(false);
-  const [replies, setReplies] = useState([]);
-  const [repliesOffset, setRepliesOffset] = useState(0);
-  const [hasMoreReplies, setHasMoreReplies] = useState(true);
-  const [repliesLoading, setRepliesLoading] = useState(false);
-
-  async function toggleLike() {
+  async function toggleLike(e) {
+    e.stopPropagation();
     if (!currentUser || pending) return;
     setPending(true);
     try {
@@ -49,37 +42,21 @@ export default function TweetCard({ tweet }) {
     }
   }
 
-  async function loadMoreReplies() {
-    setRepliesLoading(true);
-    try {
-      const page = await listReplies(tweet.id, { limit: REPLIES_PAGE_SIZE, offset: repliesOffset });
-      setReplies((prev) => [...prev, ...page]);
-      setRepliesOffset((prev) => prev + page.length);
-      setHasMoreReplies(page.length === REPLIES_PAGE_SIZE);
-    } catch {
-      // a failed page fetch just leaves "Load more" clickable to retry
-    } finally {
-      setRepliesLoading(false);
-    }
-  }
-
-  function toggleReplies() {
-    const opening = !repliesOpen;
-    setRepliesOpen(opening);
-    if (opening && replies.length === 0) {
-      loadMoreReplies();
-    }
-  }
-
-  async function handleReply(content) {
-    const reply = await createReply(tweet.id, { userId: currentUser.id, content });
-    setReplies((prev) => [reply, ...prev]);
+  function handleCardClick() {
+    if (clickable) navigate(`/tweets/${tweet.id}`);
   }
 
   return (
-    <article className="tweet-card">
+    <article
+      className={clickable ? "tweet-card tweet-card--clickable" : "tweet-card"}
+      onClick={handleCardClick}
+    >
       <div className="tweet-card__header">
-        <Link to={`/users/${tweet.user_id}`} className="tweet-card__author">
+        <Link
+          to={`/users/${tweet.user_id}`}
+          className="tweet-card__author"
+          onClick={(e) => e.stopPropagation()}
+        >
           <strong>{author ? author.display_name : `User #${tweet.user_id}`}</strong>
           <span className="tweet-card__username">@{author ? author.username : tweet.user_id}</span>
         </Link>
@@ -89,38 +66,13 @@ export default function TweetCard({ tweet }) {
       <p className="tweet-card__content">{tweet.content}</p>
 
       <div className="tweet-card__actions">
-        <button type="button" className="tweet-card__reply-toggle" onClick={toggleReplies}>
-          {repliesOpen ? "Hide replies" : "Replies"}
-        </button>
+        <span className="tweet-card__stat">
+          {tweet.reply_count} {tweet.reply_count === 1 ? "reply" : "replies"}
+        </span>
         <button type="button" className={liked ? "liked" : ""} onClick={toggleLike} disabled={pending}>
           {liked ? "♥" : "♡"} {likeCount}
         </button>
       </div>
-
-      {repliesOpen && (
-        <div className="tweet-card__replies">
-          <ComposeBox placeholder="Post your reply" buttonLabel="Reply" onSubmit={handleReply} />
-
-          <div className="tweet-list">
-            {replies.map((reply) => (
-              <TweetCard key={reply.id} tweet={reply} />
-            ))}
-          </div>
-
-          {replies.length === 0 && !repliesLoading && <p>No replies yet.</p>}
-
-          {hasMoreReplies && replies.length > 0 && (
-            <button
-              type="button"
-              className="tweet-card__load-more"
-              onClick={loadMoreReplies}
-              disabled={repliesLoading}
-            >
-              {repliesLoading ? "Loading..." : "Load more replies"}
-            </button>
-          )}
-        </div>
-      )}
     </article>
   );
 }

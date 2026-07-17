@@ -138,6 +138,9 @@ def create_reply(
     db.add(reply)
     db.flush()
     _enqueue_tweet_created(db, reply)
+    db.execute(
+        update(Tweet).where(Tweet.id == tweet_id).values(reply_count=Tweet.reply_count + 1)
+    )
     db.commit()
     db.refresh(reply)
     return reply
