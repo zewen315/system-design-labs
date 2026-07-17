@@ -83,6 +83,16 @@ export function ImageIcon(props) {
   );
 }
 
+export function GlobeIcon(props) {
+  return (
+    <svg {...shared} {...props}>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M3 12h18" />
+      <path d="M12 3a14 14 0 0 1 0 18a14 14 0 0 1 0-18" />
+    </svg>
+  );
+}
+
 // Brand marks — filled, not stroke-style, so these skip the shared line-icon config.
 export function GitHubIcon(props) {
   return (

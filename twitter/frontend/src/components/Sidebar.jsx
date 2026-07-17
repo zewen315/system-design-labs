@@ -1,4 +1,4 @@
-import { NavLink } from "react-router-dom";
+import { Link, NavLink } from "react-router-dom";
 import { useUser } from "../context/UserContext";
 import Avatar from "./Avatar";
 import { BellIcon, HomeIcon, LogOutIcon, PeopleIcon, PersonIcon, SearchIcon } from "./icons";
@@ -40,13 +40,13 @@ export default function Sidebar() {
         </button>
       </nav>
 
-      <div className="sidebar__user">
+      <Link to={`/users/${currentUser.id}`} className="sidebar__user">
         <Avatar user={currentUser} size={40} />
         <div className="sidebar__identity">
           <strong>{currentUser.display_name}</strong>
           <span>@{currentUser.username}</span>
         </div>
-      </div>
+      </Link>
     </aside>
   );
 }

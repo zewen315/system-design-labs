@@ -3,9 +3,10 @@ import { Link } from "react-router-dom";
 import { followUser, getRandomUsers, listFollowing, unfollowUser } from "../api/client";
 import { useUser } from "../context/UserContext";
 import PeopleList from "./PeopleList";
-import { GitHubIcon, LinkedInIcon } from "./icons";
+import { GitHubIcon, GlobeIcon, LinkedInIcon } from "./icons";
 
 const GITHUB_REPO_URL = "https://github.com/zewen315/system-design-labs";
+const DEVELOPER_SITE_URL = "https://zewenw.com/";
 const DEVELOPER_GITHUB_URL = "https://github.com/zewen315/";
 const DEVELOPER_LINKEDIN_URL = "https://www.linkedin.com/in/zewenw/";
 
@@ -56,7 +57,16 @@ export default function RightPanel() {
       </div>
 
       <div className="widget-card">
-        <h3>Built by Zewen Wang</h3>
+        <h3>Developer</h3>
+        <p className="widget-card__text">
+          Zewen Wang is a software engineer building backend systems, infrastructure tools, and
+          small runnable experiments — previously a Production Engineer at Meta, working across
+          software engineering, networking, reliability, and production infrastructure.
+        </p>
+        <a href={DEVELOPER_SITE_URL} target="_blank" rel="noreferrer" className="widget-card__link">
+          <GlobeIcon className="widget-card__icon" />
+          zewenw.com
+        </a>
         <a href={DEVELOPER_GITHUB_URL} target="_blank" rel="noreferrer" className="widget-card__link">
           <GitHubIcon className="widget-card__icon" />
           GitHub
