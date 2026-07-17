@@ -6,9 +6,17 @@ from sqlalchemy import func, select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
+from app import storage
 from app.database import engine, get_db
 from app.models import Base, Like, OutboxEvent, Tweet
-from app.schemas import LikeOut, TweetCreate, TweetOut, TweetUpdate
+from app.schemas import (
+    ImageUploadRequest,
+    ImageUploadResponse,
+    LikeOut,
+    TweetCreate,
+    TweetOut,
+    TweetUpdate,
+)
 
 
 @asynccontextmanager
@@ -41,9 +49,18 @@ def health() -> dict[str, str]:
     return {"status": "ok"}
 
 
+@app.post("/tweets/image-upload-url", response_model=ImageUploadResponse)
+def get_tweet_image_upload_url(body: ImageUploadRequest) -> ImageUploadResponse:
+    try:
+        upload_url, image_url = storage.presign_upload("tweets", body.content_type)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+    return ImageUploadResponse(upload_url=upload_url, image_url=image_url)
+
+
 @app.post("/tweets", response_model=TweetOut, status_code=201)
 def create_tweet(tweet_in: TweetCreate, db: Session = Depends(get_db)) -> Tweet:
-    tweet = Tweet(user_id=tweet_in.user_id, content=tweet_in.content)
+    tweet = Tweet(user_id=tweet_in.user_id, content=tweet_in.content, image_url=tweet_in.image_url)
     db.add(tweet)
     db.flush()
     _enqueue_tweet_created(db, tweet)
@@ -116,6 +133,7 @@ def create_reply(
         user_id=reply_in.user_id,
         content=reply_in.content,
         parent_tweet_id=tweet_id,
+        image_url=reply_in.image_url,
     )
     db.add(reply)
     db.flush()

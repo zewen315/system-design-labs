@@ -18,6 +18,7 @@ class Tweet(Base):
     parent_tweet_id: Mapped[int | None] = mapped_column(
         ForeignKey("tweets.id"), nullable=True, index=True
     )
+    image_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
     like_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)

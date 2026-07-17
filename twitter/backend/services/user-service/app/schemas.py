@@ -12,6 +12,7 @@ class UserOut(BaseModel):
     id: int
     username: str
     display_name: str
+    avatar_url: str | None
     created_at: datetime
 
     model_config = {"from_attributes": True}
@@ -27,3 +28,16 @@ class FollowOut(BaseModel):
     created_at: datetime
 
     model_config = {"from_attributes": True}
+
+
+class AvatarUpdate(BaseModel):
+    avatar_url: str
+
+
+class ImageUploadRequest(BaseModel):
+    content_type: str
+
+
+class ImageUploadResponse(BaseModel):
+    upload_url: str
+    image_url: str

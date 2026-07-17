@@ -7,9 +7,18 @@ from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
+from app import storage
 from app.database import engine, get_db
 from app.models import Base, Follow, User
-from app.schemas import FollowOut, UserCreate, UserOut, UserWithFollowerCount
+from app.schemas import (
+    AvatarUpdate,
+    FollowOut,
+    ImageUploadRequest,
+    ImageUploadResponse,
+    UserCreate,
+    UserOut,
+    UserWithFollowerCount,
+)
 
 
 def get_active_user(db: Session, user_id: int) -> User | None:
@@ -72,6 +81,7 @@ def top_followed_users(
             id=user.id,
             username=user.username,
             display_name=user.display_name,
+            avatar_url=user.avatar_url,
             created_at=user.created_at,
             follower_count=count,
         )
@@ -92,11 +102,31 @@ def random_users(
     return list(db.scalars(stmt))
 
 
+@app.post("/users/avatar-upload-url", response_model=ImageUploadResponse)
+def get_avatar_upload_url(body: ImageUploadRequest) -> ImageUploadResponse:
+    try:
+        upload_url, image_url = storage.presign_upload("avatars", body.content_type)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+    return ImageUploadResponse(upload_url=upload_url, image_url=image_url)
+
+
 @app.get("/users/{user_id}", response_model=UserOut)
 def get_user(user_id: int, db: Session = Depends(get_db)) -> User:
     user = get_active_user(db, user_id)
     if user is None:
         raise HTTPException(status_code=404, detail="User not found")
+    return user
+
+
+@app.patch("/users/{user_id}/avatar", response_model=UserOut)
+def update_avatar(user_id: int, body: AvatarUpdate, db: Session = Depends(get_db)) -> User:
+    user = get_active_user(db, user_id)
+    if user is None:
+        raise HTTPException(status_code=404, detail="User not found")
+    user.avatar_url = body.avatar_url
+    db.commit()
+    db.refresh(user)
     return user
 
 

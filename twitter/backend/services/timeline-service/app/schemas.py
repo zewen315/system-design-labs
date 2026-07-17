@@ -8,5 +8,6 @@ class TweetOut(BaseModel):
     user_id: int
     content: str
     parent_tweet_id: int | None
+    image_url: str | None
     like_count: int
     created_at: datetime

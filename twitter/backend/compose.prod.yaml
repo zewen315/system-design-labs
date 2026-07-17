@@ -18,8 +18,15 @@ services:
     build: ./services/tweet-service
     environment:
       DATABASE_URL: postgresql+psycopg://postgres:postgres@tweet-db:5432/tweets
+      MINIO_INTERNAL_URL: http://minio:9000
+      MINIO_PUBLIC_URL: https://twitter.zewenw.com
+      MINIO_ACCESS_KEY: minioadmin
+      MINIO_SECRET_KEY: 8cd82b3b3d9263e2f76f18cf7c518210
+      MINIO_BUCKET: media
     depends_on:
       tweet-db:
+        condition: service_healthy
+      minio:
         condition: service_healthy
 
   tweet-outbox-relay:
@@ -61,8 +68,15 @@ services:
     build: ./services/user-service
     environment:
       DATABASE_URL: postgresql+psycopg://postgres:postgres@user-db:5432/users
+      MINIO_INTERNAL_URL: http://minio:9000
+      MINIO_PUBLIC_URL: https://twitter.zewenw.com
+      MINIO_ACCESS_KEY: minioadmin
+      MINIO_SECRET_KEY: 8cd82b3b3d9263e2f76f18cf7c518210
+      MINIO_BUCKET: media
     depends_on:
       user-db:
+        condition: service_healthy
+      minio:
         condition: service_healthy
 
   timeline-redis:
@@ -98,6 +112,33 @@ services:
       timeline-redis:
         condition: service_healthy
 
+  minio:
+    image: minio/minio:latest
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: 8cd82b3b3d9263e2f76f18cf7c518210
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 2s
+      timeout: 5s
+      retries: 10
+
+  minio-init:
+    image: minio/mc:latest
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: >
+      /bin/sh -c "
+      mc alias set local http://minio:9000 minioadmin 8cd82b3b3d9263e2f76f18cf7c518210 &&
+      mc mb --ignore-existing local/media &&
+      mc anonymous set download local/media
+      "
+    restart: "no"
+
   api-gateway:
     image: nginx:1.27-alpine
     volumes:
@@ -112,7 +153,9 @@ services:
       - user-service
       - tweet-service
       - timeline-service
+      - minio
 
 volumes:
   tweet_db_data:
   user_db_data:
+  minio_data:
