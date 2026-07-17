@@ -482,20 +482,6 @@ input {
   margin: 12px 0;
 }
 
-.refresh-button {
-  margin-bottom: 16px;
-  padding: 8px 16px;
-  border: 1px solid #d4d4d8;
-  border-radius: 999px;
-  background: none;
-  color: #3f3f46;
-  font-size: 0.85rem;
-}
-
-.refresh-button:hover {
-  background: #f4f4f5;
-}
-
 /* Tweet card */
 
 .tweet-list {
@@ -518,6 +504,20 @@ input {
 
 .tweet-card--clickable:hover {
   background: #f4f4f5;
+}
+
+.tweet-card__layout {
+  display: flex;
+  gap: 12px;
+}
+
+.tweet-card__avatar-link {
+  flex-shrink: 0;
+}
+
+.tweet-card__body {
+  flex: 1;
+  min-width: 0;
 }
 
 .tweet-card__header {
@@ -630,6 +630,20 @@ input {
 
 .reply-row__parent-link:hover {
   text-decoration: underline;
+}
+
+.reply-row__layout {
+  display: flex;
+  gap: 10px;
+}
+
+.reply-row__avatar-link {
+  flex-shrink: 0;
+}
+
+.reply-row__body {
+  flex: 1;
+  min-width: 0;
 }
 
 .reply-row__header {

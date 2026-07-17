@@ -68,9 +68,6 @@ export default function Timeline() {
 
       <ComposeBox onSubmit={handlePost} />
 
-      <button type="button" className="refresh-button" onClick={load} disabled={loading}>
-        {loading ? "Refreshing..." : "Refresh"}
-      </button>
       {error && <p className="error">{error}</p>}
       <div className="tweet-list">
         {tweets.map((tweet) => (
