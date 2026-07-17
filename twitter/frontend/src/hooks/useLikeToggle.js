@@ -2,9 +2,9 @@ import { useState } from "react";
 import { likeTweet, unlikeTweet } from "../api/client";
 import { useUser } from "../context/UserContext";
 
-export function useLikeToggle(tweet) {
+export function useLikeToggle(tweet, likedByMe = false) {
   const { currentUser } = useUser();
-  const [liked, setLiked] = useState(false);
+  const [liked, setLiked] = useState(likedByMe);
   const [likeCount, setLikeCount] = useState(tweet.like_count);
   const [pending, setPending] = useState(false);
 

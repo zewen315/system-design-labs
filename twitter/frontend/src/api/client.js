@@ -100,6 +100,12 @@ export function listUserLikes(userId, { limit = 20, offset = 0 } = {}) {
   return request(GATEWAY.tweet, `/users/${userId}/likes?limit=${limit}&offset=${offset}`);
 }
 
+export function getLikedTweetIds(userId, tweetIds) {
+  if (tweetIds.length === 0) return Promise.resolve([]);
+  const query = tweetIds.map((id) => `tweet_ids=${id}`).join("&");
+  return request(GATEWAY.tweet, `/users/${userId}/liked-tweet-ids?${query}`);
+}
+
 export function createReply(tweetId, { userId, content, imageUrl }) {
   return request(GATEWAY.tweet, `/tweets/${tweetId}/replies`, {
     method: "POST",

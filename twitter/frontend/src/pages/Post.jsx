@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { createReply, getTweet, listReplies } from "../api/client";
+import { createReply, getLikedTweetIds, getTweet, listReplies } from "../api/client";
 import { useUser } from "../context/UserContext";
 import ComposeBox from "../components/ComposeBox";
 import TweetCard from "../components/TweetCard";
@@ -15,6 +15,7 @@ export default function Post() {
   const { currentUser } = useUser();
   const [tweet, setTweet] = useState(null);
   const [replies, setReplies] = useState([]);
+  const [likedIds, setLikedIds] = useState(new Set());
   const [repliesOffset, setRepliesOffset] = useState(0);
   const [hasMoreReplies, setHasMoreReplies] = useState(true);
   const [repliesLoading, setRepliesLoading] = useState(false);
@@ -25,6 +26,7 @@ export default function Post() {
     setError(null);
     setTweet(null);
     setReplies([]);
+    setLikedIds(new Set());
     setRepliesOffset(0);
     setHasMoreReplies(true);
 
@@ -39,6 +41,9 @@ export default function Post() {
         setReplies(replyPage);
         setRepliesOffset(replyPage.length);
         setHasMoreReplies(replyPage.length === REPLIES_PAGE_SIZE);
+
+        const ids = [tweetData.id, ...replyPage.map((r) => r.id)];
+        setLikedIds(new Set(await getLikedTweetIds(currentUser.id, ids)));
       } catch (err) {
         if (!cancelled) setError(err.message);
       }
@@ -47,6 +52,7 @@ export default function Post() {
     return () => {
       cancelled = true;
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tweetId]);
 
   async function loadMoreReplies() {
@@ -56,6 +62,9 @@ export default function Post() {
       setReplies((prev) => [...prev, ...page]);
       setRepliesOffset((prev) => prev + page.length);
       setHasMoreReplies(page.length === REPLIES_PAGE_SIZE);
+
+      const newIds = await getLikedTweetIds(currentUser.id, page.map((r) => r.id));
+      setLikedIds((prev) => new Set([...prev, ...newIds]));
     } catch (err) {
       setError(err.message);
     } finally {
@@ -81,13 +90,13 @@ export default function Post() {
         <h2>Post</h2>
       </div>
 
-      <TweetCard tweet={tweet} clickable={false} large />
+      <TweetCard tweet={tweet} clickable={false} large likedByMe={likedIds.has(tweet.id)} />
 
       <ComposeBox placeholder="Post your reply" buttonLabel="Reply" onSubmit={handleReply} />
 
       <div className="reply-list">
         {replies.map((reply) => (
-          <ReplyRow key={reply.id} tweet={reply} />
+          <ReplyRow key={reply.id} tweet={reply} likedByMe={likedIds.has(reply.id)} />
         ))}
       </div>
 

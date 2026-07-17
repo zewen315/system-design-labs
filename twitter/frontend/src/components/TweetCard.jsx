@@ -3,10 +3,10 @@ import { useAuthor } from "../hooks/useAuthor";
 import { useLikeToggle } from "../hooks/useLikeToggle";
 import { timeAgo } from "../utils/timeAgo";
 
-export default function TweetCard({ tweet, clickable = true, large = false }) {
+export default function TweetCard({ tweet, clickable = true, large = false, likedByMe = false }) {
   const author = useAuthor(tweet.user_id);
   const navigate = useNavigate();
-  const { liked, likeCount, pending, toggleLike } = useLikeToggle(tweet);
+  const { liked, likeCount, pending, toggleLike } = useLikeToggle(tweet, likedByMe);
 
   function handleCardClick() {
     if (clickable) navigate(`/tweets/${tweet.id}`);

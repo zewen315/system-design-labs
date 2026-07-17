@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useState } from "react";
-import { Link } from "react-router-dom";
 import {
   followUser,
   getRandomUsers,
@@ -8,30 +7,7 @@ import {
   unfollowUser,
 } from "../api/client";
 import { useUser } from "../context/UserContext";
-import Avatar from "../components/Avatar";
-
-function PeopleList({ people, followingIds, pendingId, onToggle, emptyLabel }) {
-  if (people.length === 0) return <p className="user-list__empty">{emptyLabel}</p>;
-
-  return (
-    <ul className="people-list">
-      {people.map((person) => (
-        <li key={person.id}>
-          <Link to={`/users/${person.id}`} className="people-list__identity">
-            <Avatar user={person} size={40} />
-            <span className="people-list__names">
-              <strong>{person.display_name}</strong>
-              <span>@{person.username}</span>
-            </span>
-          </Link>
-          <button type="button" onClick={() => onToggle(person.id)} disabled={pendingId === person.id}>
-            {followingIds.has(person.id) ? "Unfollow" : "Follow"}
-          </button>
-        </li>
-      ))}
-    </ul>
-  );
-}
+import PeopleList from "../components/PeopleList";
 
 export default function Follow() {
   const { currentUser } = useUser();
@@ -113,6 +89,7 @@ export default function Follow() {
         pendingId={pendingId}
         onToggle={toggleFollow}
         emptyLabel={active.emptyLabel}
+        viewerId={currentUser.id}
       />
     </div>
   );

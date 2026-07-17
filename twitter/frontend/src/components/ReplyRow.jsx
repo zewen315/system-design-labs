@@ -3,12 +3,17 @@ import { useAuthor } from "../hooks/useAuthor";
 import { useLikeToggle } from "../hooks/useLikeToggle";
 import { timeAgo } from "../utils/timeAgo";
 
-export default function ReplyRow({ tweet }) {
+export default function ReplyRow({ tweet, likedByMe = false, showParentLink = false }) {
   const author = useAuthor(tweet.user_id);
-  const { liked, likeCount, pending, toggleLike } = useLikeToggle(tweet);
+  const { liked, likeCount, pending, toggleLike } = useLikeToggle(tweet, likedByMe);
 
   return (
     <div className="reply-row">
+      {showParentLink && tweet.parent_tweet_id && (
+        <Link to={`/tweets/${tweet.parent_tweet_id}`} className="reply-row__parent-link">
+          View original post
+        </Link>
+      )}
       <div className="reply-row__header">
         <Link to={`/users/${tweet.user_id}`} className="reply-row__author">
           <strong>{author ? author.display_name : `User #${tweet.user_id}`}</strong>

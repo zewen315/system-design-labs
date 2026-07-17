@@ -620,6 +620,18 @@ input {
   border-bottom: 1px solid #e4e4e7;
 }
 
+.reply-row__parent-link {
+  display: block;
+  margin-bottom: 6px;
+  color: #3b82f6;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.reply-row__parent-link:hover {
+  text-decoration: underline;
+}
+
 .reply-row__header {
   display: flex;
   align-items: baseline;
@@ -748,63 +760,8 @@ input {
 
 /* User list */
 
-.user-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.user-list li a {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 12px;
-  border: 1px solid #e4e4e7;
-  border-radius: 12px;
-}
-
-.user-list li a:hover {
-  border-color: #93c5fd;
-}
-
-.user-list__names {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-}
-
-.user-list__names strong {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.user-list__names span {
-  color: #71717a;
-  font-size: 0.85rem;
-}
-
 .user-list__empty {
   color: #71717a;
-}
-
-/* Discover */
-
-.discover-section {
-  margin-bottom: 32px;
-}
-
-.discover-section h3 {
-  margin: 0 0 2px;
-}
-
-.discover-section__hint {
-  color: #71717a;
-  font-size: 0.85rem;
-  margin: 0 0 14px;
 }
 
 .people-list {

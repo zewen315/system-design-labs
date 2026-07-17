@@ -203,6 +203,19 @@ def list_likes(tweet_id: int, db: Session = Depends(get_db)) -> list[Like]:
     return list(db.scalars(stmt))
 
 
+@app.get("/users/{user_id}/liked-tweet-ids", response_model=list[int])
+def list_liked_tweet_ids(
+    user_id: int, tweet_ids: list[int] = Query(default=[]), db: Session = Depends(get_db)
+) -> list[int]:
+    """Which of the given tweet_ids has this user liked — lets a page that already
+    fetched a batch of tweets find out which ones to render with a filled-in heart,
+    without an unbounded 'give me every tweet this user has ever liked' query."""
+    if not tweet_ids:
+        return []
+    stmt = select(Like.tweet_id).where(Like.user_id == user_id, Like.tweet_id.in_(tweet_ids))
+    return list(db.scalars(stmt))
+
+
 @app.get("/users/{user_id}/tweets", response_model=list[TweetOut])
 def list_user_tweets(
     user_id: int,

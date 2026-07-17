@@ -1,5 +1,11 @@
 import { useCallback, useEffect, useState } from "react";
-import { createTweet, getRandomTweets, getTimeline, listFollowing } from "../api/client";
+import {
+  createTweet,
+  getLikedTweetIds,
+  getRandomTweets,
+  getTimeline,
+  listFollowing,
+} from "../api/client";
 import { useUser } from "../context/UserContext";
 import ComposeBox from "../components/ComposeBox";
 import TweetCard from "../components/TweetCard";
@@ -8,6 +14,7 @@ export default function Timeline() {
   const { currentUser } = useUser();
   const [tab, setTab] = useState("followed");
   const [tweets, setTweets] = useState([]);
+  const [likedIds, setLikedIds] = useState(new Set());
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -15,13 +22,16 @@ export default function Timeline() {
     setLoading(true);
     setError(null);
     try {
+      let data;
       if (tab === "followed") {
-        setTweets(await getTimeline(currentUser.id));
+        data = await getTimeline(currentUser.id);
       } else {
         const following = await listFollowing(currentUser.id);
         const excludeUserIds = [currentUser.id, ...following.map((u) => u.id)];
-        setTweets(await getRandomTweets({ excludeUserIds }));
+        data = await getRandomTweets({ excludeUserIds });
       }
+      setTweets(data);
+      setLikedIds(new Set(await getLikedTweetIds(currentUser.id, data.map((t) => t.id))));
     } catch (err) {
       setError(err.message);
     } finally {
@@ -70,7 +80,7 @@ export default function Timeline() {
       {error && <p className="error">{error}</p>}
       <div className="tweet-list">
         {tweets.map((tweet) => (
-          <TweetCard key={tweet.id} tweet={tweet} />
+          <TweetCard key={tweet.id} tweet={tweet} likedByMe={likedIds.has(tweet.id)} />
         ))}
         {!loading && tweets.length === 0 && (
           <p>

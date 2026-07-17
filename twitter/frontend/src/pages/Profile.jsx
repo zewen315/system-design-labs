@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import {
   followUser,
+  getLikedTweetIds,
   getUser,
   listFollowers,
   listFollowing,
@@ -13,7 +14,8 @@ import {
 import { useUser } from "../context/UserContext";
 import Avatar from "../components/Avatar";
 import TweetCard from "../components/TweetCard";
-import UserList from "../components/UserList";
+import ReplyRow from "../components/ReplyRow";
+import PeopleList from "../components/PeopleList";
 
 function formatJoinDate(iso) {
   return new Date(iso).toLocaleDateString("en-US", { month: "long", year: "numeric" });
@@ -26,16 +28,19 @@ export default function Profile() {
   const [tweets, setTweets] = useState([]);
   const [replies, setReplies] = useState([]);
   const [likes, setLikes] = useState([]);
+  const [likedIds, setLikedIds] = useState(new Set());
   const [followers, setFollowers] = useState([]);
   const [following, setFollowing] = useState([]);
+  const [viewerFollowingIds, setViewerFollowingIds] = useState(new Set());
   const [tab, setTab] = useState("tweets");
   const [error, setError] = useState(null);
   const [followPending, setFollowPending] = useState(false);
+  const [rowPendingId, setRowPendingId] = useState(null);
 
   const load = useCallback(async () => {
     setError(null);
     try {
-      const [profileData, tweetData, replyData, likeData, followerData, followingData] =
+      const [profileData, tweetData, replyData, likeData, followerData, followingData, viewerFollowingData] =
         await Promise.all([
           getUser(userId),
           listUserTweets(userId),
@@ -43,6 +48,7 @@ export default function Profile() {
           listUserLikes(userId),
           listFollowers(userId),
           listFollowing(userId),
+          listFollowing(currentUser.id),
         ]);
       setProfile(profileData);
       setTweets(tweetData);
@@ -50,10 +56,14 @@ export default function Profile() {
       setLikes(likeData);
       setFollowers(followerData);
       setFollowing(followingData);
+      setViewerFollowingIds(new Set(viewerFollowingData.map((u) => u.id)));
+
+      const tweetIds = [...tweetData, ...replyData, ...likeData].map((t) => t.id);
+      setLikedIds(new Set(await getLikedTweetIds(currentUser.id, tweetIds)));
     } catch (err) {
       setError(err.message);
     }
-  }, [userId]);
+  }, [userId, currentUser.id]);
 
   useEffect(() => {
     load();
@@ -76,6 +86,22 @@ export default function Profile() {
       setError(err.message);
     } finally {
       setFollowPending(false);
+    }
+  }
+
+  async function toggleFollowPerson(personId) {
+    setRowPendingId(personId);
+    try {
+      if (viewerFollowingIds.has(personId)) {
+        await unfollowUser(currentUser.id, personId);
+      } else {
+        await followUser(currentUser.id, personId);
+      }
+      await load();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setRowPendingId(null);
     }
   }
 
@@ -127,15 +153,15 @@ export default function Profile() {
       {tab === "tweets" && (
         <div className="tweet-list">
           {tweets.map((tweet) => (
-            <TweetCard key={tweet.id} tweet={tweet} />
+            <TweetCard key={tweet.id} tweet={tweet} likedByMe={likedIds.has(tweet.id)} />
           ))}
           {tweets.length === 0 && <p>No tweets yet.</p>}
         </div>
       )}
       {tab === "replies" && (
-        <div className="tweet-list">
+        <div className="reply-list">
           {replies.map((reply) => (
-            <TweetCard key={reply.id} tweet={reply} />
+            <ReplyRow key={reply.id} tweet={reply} likedByMe={likedIds.has(reply.id)} showParentLink />
           ))}
           {replies.length === 0 && <p>No replies yet.</p>}
         </div>
@@ -143,13 +169,31 @@ export default function Profile() {
       {tab === "likes" && (
         <div className="tweet-list">
           {likes.map((tweet) => (
-            <TweetCard key={tweet.id} tweet={tweet} />
+            <TweetCard key={tweet.id} tweet={tweet} likedByMe={likedIds.has(tweet.id)} />
           ))}
           {likes.length === 0 && <p>No liked tweets yet.</p>}
         </div>
       )}
-      {tab === "followers" && <UserList users={followers} emptyLabel="No followers yet." />}
-      {tab === "following" && <UserList users={following} emptyLabel="Not following anyone yet." />}
+      {tab === "followers" && (
+        <PeopleList
+          people={followers}
+          followingIds={viewerFollowingIds}
+          pendingId={rowPendingId}
+          onToggle={toggleFollowPerson}
+          emptyLabel="No followers yet."
+          viewerId={currentUser.id}
+        />
+      )}
+      {tab === "following" && (
+        <PeopleList
+          people={following}
+          followingIds={viewerFollowingIds}
+          pendingId={rowPendingId}
+          onToggle={toggleFollowPerson}
+          emptyLabel="Not following anyone yet."
+          viewerId={currentUser.id}
+        />
+      )}
     </div>
   );
 }
