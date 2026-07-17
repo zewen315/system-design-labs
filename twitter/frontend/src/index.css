@@ -547,8 +547,8 @@ input {
 
 .user-list li a {
   display: flex;
-  align-items: baseline;
-  gap: 8px;
+  align-items: center;
+  gap: 10px;
   padding: 10px 12px;
   border: 1px solid #e4e4e7;
   border-radius: 12px;
@@ -558,7 +558,19 @@ input {
   border-color: #93c5fd;
 }
 
-.user-list li a span {
+.user-list__names {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.user-list__names strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.user-list__names span {
   color: #71717a;
   font-size: 0.85rem;
 }
