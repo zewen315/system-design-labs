@@ -1046,3 +1046,64 @@ input {
 .confirm-dialog__confirm:hover {
   background: #17306e;
 }
+
+/* Mobile: right panel drops out, feed goes full-width, sidebar becomes a
+   fixed bottom tab bar instead of a left rail (matches how Twitter's own
+   mobile web behaves, rather than trying to shrink a 220px vertical nav
+   into a ~375px viewport). */
+@media (max-width: 768px) {
+  .right-panel {
+    display: none;
+  }
+
+  .app-main {
+    max-width: none;
+    margin: 0;
+    padding: 16px 16px 88px;
+  }
+
+  .profile-banner {
+    margin: -16px -16px 20px;
+  }
+
+  .sidebar {
+    position: fixed;
+    top: auto;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    width: auto;
+    height: auto;
+    flex-direction: row;
+    padding: 6px 4px;
+    border-right: none;
+    border-top: 1px solid #e4e4e7;
+    background: white;
+    z-index: 50;
+  }
+
+  .sidebar__logo,
+  .sidebar__user {
+    display: none;
+  }
+
+  .sidebar__nav {
+    flex-direction: row;
+    justify-content: space-around;
+    width: 100%;
+    gap: 0;
+  }
+
+  .sidebar__nav a,
+  .sidebar__nav button {
+    flex-direction: column;
+    gap: 2px;
+    padding: 8px 6px;
+    border-radius: 12px;
+  }
+
+  .sidebar__label {
+    font-size: 0.62rem;
+    font-weight: 600;
+  }
+}

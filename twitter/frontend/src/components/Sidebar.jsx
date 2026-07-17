@@ -27,7 +27,7 @@ export default function Sidebar() {
         {LINKS.map(({ to, label, end, Icon }) => (
           <NavLink key={to} to={to} end={end} className={({ isActive }) => (isActive ? "active" : "")}>
             <Icon className="sidebar__icon" />
-            {label}
+            <span className="sidebar__label">{label}</span>
           </NavLink>
         ))}
         <NavLink
@@ -35,11 +35,11 @@ export default function Sidebar() {
           className={({ isActive }) => (isActive ? "active" : "")}
         >
           <PersonIcon className="sidebar__icon" />
-          Profile
+          <span className="sidebar__label">Profile</span>
         </NavLink>
         <button type="button" onClick={() => setConfirmingLogout(true)}>
           <LogOutIcon className="sidebar__icon" />
-          Log out
+          <span className="sidebar__label">Log out</span>
         </button>
       </nav>
 
