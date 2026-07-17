@@ -53,6 +53,9 @@ export default function Profile() {
           listFollowing(userId),
           listFollowing(currentUser.id),
         ]);
+      const tweetIds = [...tweetData, ...replyData, ...likeData].map((t) => t.id);
+      const liked = await getLikedTweetIds(currentUser.id, tweetIds);
+
       setProfile(profileData);
       setTweets(tweetData);
       setReplies(replyData);
@@ -60,9 +63,7 @@ export default function Profile() {
       setFollowers(followerData);
       setFollowing(followingData);
       setViewerFollowingIds(new Set(viewerFollowingData.map((u) => u.id)));
-
-      const tweetIds = [...tweetData, ...replyData, ...likeData].map((t) => t.id);
-      setLikedIds(new Set(await getLikedTweetIds(currentUser.id, tweetIds)));
+      setLikedIds(new Set(liked));
     } catch (err) {
       setError(err.message);
     }

@@ -22,8 +22,16 @@ export function useLikeToggle(tweet, likedByMe = false) {
         setLiked(true);
         setLikeCount((c) => c + 1);
       }
-    } catch {
-      // conflict (already liked/unliked, e.g. from another tab) — leave state as-is
+    } catch (err) {
+      // Our local `liked` state was wrong relative to the server (e.g. a
+      // stale initial value, or liked/unliked from another tab) - the
+      // rejection tells us the actual state, so resync to it instead of
+      // silently leaving the button stuck showing the wrong thing.
+      if (err.status === 409) {
+        setLiked(true); // "already liked" - it really is liked
+      } else if (err.status === 404) {
+        setLiked(false); // "like not found" - it really isn't liked
+      }
     } finally {
       setPending(false);
     }

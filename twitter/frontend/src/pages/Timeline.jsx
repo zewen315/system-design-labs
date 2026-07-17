@@ -31,8 +31,9 @@ export default function Timeline() {
         const excludeUserIds = [currentUser.id, ...following.map((u) => u.id)];
         data = await getRandomTweets({ excludeUserIds });
       }
+      const liked = await getLikedTweetIds(currentUser.id, data.map((t) => t.id));
       setTweets(data);
-      setLikedIds(new Set(await getLikedTweetIds(currentUser.id, data.map((t) => t.id))));
+      setLikedIds(new Set(liked));
     } catch (err) {
       setError(err.message);
     } finally {

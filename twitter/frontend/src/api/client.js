@@ -14,7 +14,9 @@ async function request(base, path, options = {}) {
   const data = await res.json().catch(() => null);
   if (!res.ok) {
     const detail = data?.detail ?? `Request failed with ${res.status}`;
-    throw new Error(typeof detail === "string" ? detail : JSON.stringify(detail));
+    const error = new Error(typeof detail === "string" ? detail : JSON.stringify(detail));
+    error.status = res.status;
+    throw error;
   }
   return data;
 }

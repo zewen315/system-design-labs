@@ -38,13 +38,16 @@ export default function Post() {
           listReplies(tweetId, { limit: REPLIES_PAGE_SIZE, offset: 0 }),
         ]);
         if (cancelled) return;
+
+        const ids = [tweetData.id, ...replyPage.map((r) => r.id)];
+        const liked = await getLikedTweetIds(currentUser.id, ids);
+        if (cancelled) return;
+
         setTweet(tweetData);
         setReplies(replyPage);
         setRepliesOffset(replyPage.length);
         setHasMoreReplies(replyPage.length === REPLIES_PAGE_SIZE);
-
-        const ids = [tweetData.id, ...replyPage.map((r) => r.id)];
-        setLikedIds(new Set(await getLikedTweetIds(currentUser.id, ids)));
+        setLikedIds(new Set(liked));
       } catch (err) {
         if (!cancelled) setError(err.message);
       }
@@ -60,11 +63,11 @@ export default function Post() {
     setRepliesLoading(true);
     try {
       const page = await listReplies(tweetId, { limit: REPLIES_PAGE_SIZE, offset: repliesOffset });
+      const newIds = await getLikedTweetIds(currentUser.id, page.map((r) => r.id));
+
       setReplies((prev) => [...prev, ...page]);
       setRepliesOffset((prev) => prev + page.length);
       setHasMoreReplies(page.length === REPLIES_PAGE_SIZE);
-
-      const newIds = await getLikedTweetIds(currentUser.id, page.map((r) => r.id));
       setLikedIds((prev) => new Set([...prev, ...newIds]));
     } catch (err) {
       setError(err.message);
