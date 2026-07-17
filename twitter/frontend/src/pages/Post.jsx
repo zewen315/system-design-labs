@@ -113,6 +113,10 @@ export default function Post() {
           {repliesLoading ? "Loading..." : "Load more replies"}
         </button>
       )}
+
+      {!hasMoreReplies && replies.length > 0 && (
+        <p className="end-of-list">No more replies.</p>
+      )}
     </div>
   );
 }

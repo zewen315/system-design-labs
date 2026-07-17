@@ -747,6 +747,13 @@ input {
   background: #f4f4f5;
 }
 
+.end-of-list {
+  margin: 16px 0 0;
+  color: #a1a1aa;
+  font-size: 0.85rem;
+  text-align: center;
+}
+
 /* Reply row (concise, non-clickable — used on the Post page) */
 
 .reply-list {
