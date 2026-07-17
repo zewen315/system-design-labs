@@ -1,6 +1,7 @@
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { UserProvider, useUser } from "./context/UserContext";
 import Sidebar from "./components/Sidebar";
+import RightPanel from "./components/RightPanel";
 import IdentityGate from "./pages/IdentityGate";
 import Timeline from "./pages/Timeline";
 import Post from "./pages/Post";
@@ -27,6 +28,7 @@ function Gated() {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>
+      <RightPanel />
     </div>
   );
 }
