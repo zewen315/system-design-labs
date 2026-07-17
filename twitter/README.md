@@ -90,7 +90,27 @@ A reply has the exact same shape as a tweet — `user_id` + `content` + `created
 
 ### Likes span two services without a foreign key
 
-A like connects a `Tweet` (owned by `tweet-service`) to a `User` (owned by `user-service`) — two different databases, so there's no way to have a real foreign key on both sides. This isn't a new problem: `Tweet.user_id` was already an unenforced cross-service reference from the start. `likes` follows the same rule — `tweet_id` gets a real FK (same database as `Tweet`), `user_id` stays a plain, unvalidated int. The table itself mirrors `follows`: composite primary key `(tweet_id, user_id)` blocks double-likes structurally, and a separate index on `user_id` supports the reverse lookup ("tweets this user liked"). Deliberately deferred: a denormalized `like_count` on `TweetOut` would avoid computing counts live, but introduces its own write-complexity and drift risk — a separate decision for later.
+A like connects a `Tweet` (owned by `tweet-service`) to a `User` (owned by `user-service`) — two different databases, so there's no way to have a real foreign key on both sides. This isn't a new problem: `Tweet.user_id` was already an unenforced cross-service reference from the start. `likes` follows the same rule — `tweet_id` gets a real FK (same database as `Tweet`), `user_id` stays a plain, unvalidated int. The table itself mirrors `follows`: composite primary key `(tweet_id, user_id)` blocks double-likes structurally, and a separate index on `user_id` supports the reverse lookup ("tweets this user liked").
+
+### Denormalized like_count, and why it's safe here specifically
+
+Counting `likes` live (`COUNT(*) WHERE tweet_id = ?`) is index-backed (the composite PK's leading column is `tweet_id`), so it isn't naive — but it's still `O(matching rows)`, not `O(1)`, and `timeline-service` rendering a page of 20 tweets would multiply that cost by 20 per request. `Tweet` gained a denormalized `like_count` column, kept in sync inside the *same transaction* as every like/unlike write.
+
+This is a safer version of "just add a counter" than the general case, for a reason specific to this architecture: `Like` and `Tweet` live in the same Postgres database, owned by the same service, so the write to `likes` and the write to `like_count` can be part of one atomic transaction — there's no cross-service drift risk to design around here, unlike the `tweet-events` outbox (where the two things genuinely live in different systems and needed the outbox pattern to stay consistent).
+
+The increment itself has to be a database-level atomic expression, not a Python read-modify-write:
+
+```python
+# WRONG — read and write are separate round trips; a concurrent like can land
+# in between them and get silently overwritten (a "lost update")
+tweet.like_count += 1
+
+# RIGHT — Postgres locks the row and evaluates the expression against the
+# current committed value as one indivisible operation
+db.execute(update(Tweet).where(Tweet.id == tweet_id).values(like_count=Tweet.like_count + 1))
+```
+
+`like_tweet`'s duplicate-check was changed from `db.commit()` to `db.flush()` to make this possible: `flush()` still sends the pending `INSERT` to Postgres and still raises `IntegrityError` on a duplicate `(tweet_id, user_id)`, but it doesn't end the transaction — so the `Like` insert and the `like_count` update commit together as one atomic unit, rather than as two separate transactions that could drift apart if a crash landed between them.
 
 ### Timeline: fan-out-on-write, and why it needs a transactional outbox
 
@@ -118,4 +138,10 @@ The worker joins `stream-redis`'s stream as a **consumer group** (`XGROUP CREATE
 That last point is where a real gap lives: if `fan_out_tweet` raises (a transient `user-service` failure, say) or the worker crashes mid-processing, the message is left unacknowledged in the consumer group's pending list — but this worker never reclaims it. A production consumer would periodically run `XAUTOCLAIM` to find messages that have been pending too long and retry them; without that, a failed message here just sits stuck, unprocessed, forever. Deliberately left as the simple version for now rather than pretending it's solved — a natural next lesson on retry/redelivery semantics.
 
 One consequence of this architecture worth noting explicitly: **`GET /tweets?ids=...` (a small batch-fetch endpoint added to `tweet-service`) exists specifically to avoid an N+1 problem here.** The Sorted Set only stores tweet IDs, not content — every timeline read needs to hydrate those IDs into full tweets from `tweet-service`. Fetching them one-by-one would mean a 20-tweet timeline costing 20 HTTP round trips; the batch endpoint turns that into one.
+
+### A deactivated user can still post — deliberately not fixed here
+
+Testing surfaced this concretely: a soft-deleted (`deactivated_at` set) user still returns `404` from `user-service`, but `tweet-service`'s `POST /tweets` accepted a tweet from that same `user_id` without complaint, and it fanned out to followers' timelines correctly. This isn't a new gap — `Tweet.user_id` has been an unvalidated cross-service reference since the very first version of `Tweet`; it was never checked against `user-service` at all, for *any* user, active or not. Fixing only the deactivated case would be an inconsistent half-measure.
+
+The tempting fix — have `create_tweet` call `user-service` synchronously before every write — was deliberately rejected. It would make `tweet-service`'s availability depend on `user-service` being reachable on every single tweet creation, which directly undoes the loose coupling that database-per-service and event-driven fan-out were built to provide, in exchange for closing a fairly narrow case. The right fix isn't a cross-service call at all — it's an **auth layer** (the same gap already flagged for `PATCH`/`DELETE` ownership checks): in a real system, a deactivated account wouldn't have a valid session/token to make the request in the first place, so this would never reach `tweet-service`'s business logic to begin with. One missing piece, showing up in two places.
 

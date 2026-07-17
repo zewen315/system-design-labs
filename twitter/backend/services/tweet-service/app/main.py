@@ -2,7 +2,7 @@ from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
 from fastapi import Depends, FastAPI, HTTPException, Query, Response
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -137,10 +137,15 @@ def like_tweet(tweet_id: int, user_id: int, db: Session = Depends(get_db)) -> Li
     like = Like(tweet_id=tweet_id, user_id=user_id)
     db.add(like)
     try:
-        db.commit()
+        db.flush()
     except IntegrityError:
         db.rollback()
         raise HTTPException(status_code=409, detail="Tweet already liked")
+
+    db.execute(
+        update(Tweet).where(Tweet.id == tweet_id).values(like_count=Tweet.like_count + 1)
+    )
+    db.commit()
     db.refresh(like)
     return like
 
@@ -151,6 +156,9 @@ def unlike_tweet(tweet_id: int, user_id: int, db: Session = Depends(get_db)) -> 
     if like is None:
         raise HTTPException(status_code=404, detail="Like not found")
     db.delete(like)
+    db.execute(
+        update(Tweet).where(Tweet.id == tweet_id).values(like_count=Tweet.like_count - 1)
+    )
     db.commit()
     return Response(status_code=204)
 
