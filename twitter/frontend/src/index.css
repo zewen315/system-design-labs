@@ -73,18 +73,23 @@ input {
   gap: 4px;
 }
 
-.sidebar__nav a {
+.sidebar__nav a,
+.sidebar__nav button {
   display: flex;
   align-items: center;
   gap: 14px;
   padding: 12px;
+  border: none;
   border-radius: 999px;
+  background: none;
   font-size: 1.05rem;
   font-weight: 600;
   color: #3f3f46;
+  text-align: left;
 }
 
-.sidebar__nav a:hover {
+.sidebar__nav a:hover,
+.sidebar__nav button:hover {
   background: #f4f4f5;
 }
 
@@ -105,11 +110,6 @@ input {
   gap: 10px;
   margin-top: auto;
   padding: 12px;
-  border-radius: 14px;
-}
-
-.sidebar__user:hover {
-  background: #f4f4f5;
 }
 
 /* Avatar (shared by the sidebar's current-user block and people lists) */
@@ -148,20 +148,6 @@ input {
 .sidebar__identity span {
   color: #71717a;
   font-size: 0.8rem;
-}
-
-.sidebar__user button {
-  flex-shrink: 0;
-  padding: 6px 12px;
-  border: 1px solid #d4d4d8;
-  border-radius: 999px;
-  background: white;
-  color: #52525b;
-  font-size: 0.75rem;
-}
-
-.sidebar__user button:hover {
-  background: #f4f4f5;
 }
 
 /* Layout */

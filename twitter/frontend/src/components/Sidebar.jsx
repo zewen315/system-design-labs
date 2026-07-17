@@ -1,7 +1,7 @@
 import { NavLink } from "react-router-dom";
 import { useUser } from "../context/UserContext";
 import Avatar from "./Avatar";
-import { BellIcon, HomeIcon, PeopleIcon, PersonIcon, SearchIcon } from "./icons";
+import { BellIcon, HomeIcon, LogOutIcon, PeopleIcon, PersonIcon, SearchIcon } from "./icons";
 
 const LINKS = [
   { to: "/", label: "Timeline", end: true, Icon: HomeIcon },
@@ -34,6 +34,10 @@ export default function Sidebar() {
           <PersonIcon className="sidebar__icon" />
           Profile
         </NavLink>
+        <button type="button" onClick={switchUser}>
+          <LogOutIcon className="sidebar__icon" />
+          Log out
+        </button>
       </nav>
 
       <div className="sidebar__user">
@@ -42,9 +46,6 @@ export default function Sidebar() {
           <strong>{currentUser.display_name}</strong>
           <span>@{currentUser.username}</span>
         </div>
-        <button type="button" onClick={switchUser}>
-          Switch user
-        </button>
       </div>
     </aside>
   );
