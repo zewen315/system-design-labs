@@ -23,13 +23,12 @@ Each lab is inspired by a classic System Design interview problem.
 ```text
 system-design-labs/
 
-├── twitter/
-├── youtube/
-├── whatsapp/
 ├── dropbox/
-├── search-engine/
+├── google/
+├── ticketmaster/
+├── twitter/
 ├── uber/
-└── shared/
+└── whatsapp/
 ```
 
 Rather than implementing every feature, each project focuses on the architectural decisions that make these systems scalable.
