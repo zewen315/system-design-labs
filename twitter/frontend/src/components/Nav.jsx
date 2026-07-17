@@ -11,6 +11,7 @@ export default function Nav() {
         Twitter Lab
       </Link>
       <div className="nav__right">
+        <Link to="/discover">Discover</Link>
         <Link to={`/users/${currentUser.id}`}>@{currentUser.username}</Link>
         <button type="button" onClick={switchUser}>
           Switch user

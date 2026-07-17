@@ -5,6 +5,7 @@ import IdentityGate from "./pages/IdentityGate";
 import Timeline from "./pages/Timeline";
 import TweetDetail from "./pages/TweetDetail";
 import Profile from "./pages/Profile";
+import Discover from "./pages/Discover";
 
 function Gated() {
   const { currentUser } = useUser();
@@ -16,6 +17,7 @@ function Gated() {
       <main className="app-main">
         <Routes>
           <Route path="/" element={<Timeline />} />
+          <Route path="/discover" element={<Discover />} />
           <Route path="/tweets/:tweetId" element={<TweetDetail />} />
           <Route path="/users/:userId" element={<Profile />} />
           <Route path="*" element={<Navigate to="/" replace />} />

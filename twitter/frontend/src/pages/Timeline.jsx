@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useState } from "react";
-import { createTweet, getTimeline } from "../api/client";
+import { createTweet, getRandomTweets, getTimeline, listFollowing } from "../api/client";
 import { useUser } from "../context/UserContext";
 import ComposeBox from "../components/ComposeBox";
 import TweetCard from "../components/TweetCard";
 
 export default function Timeline() {
   const { currentUser } = useUser();
+  const [tab, setTab] = useState("followed");
   const [tweets, setTweets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -14,13 +15,19 @@ export default function Timeline() {
     setLoading(true);
     setError(null);
     try {
-      setTweets(await getTimeline(currentUser.id));
+      if (tab === "followed") {
+        setTweets(await getTimeline(currentUser.id));
+      } else {
+        const following = await listFollowing(currentUser.id);
+        const excludeUserIds = [currentUser.id, ...following.map((u) => u.id)];
+        setTweets(await getRandomTweets({ excludeUserIds }));
+      }
     } catch (err) {
       setError(err.message);
     } finally {
       setLoading(false);
     }
-  }, [currentUser.id]);
+  }, [currentUser.id, tab]);
 
   useEffect(() => {
     load();
@@ -34,11 +41,28 @@ export default function Timeline() {
     <div className="page">
       <h2>Home</h2>
       <ComposeBox onSubmit={handlePost} />
-      <p className="timeline-hint">
-        This feed is fed by fan-out-on-write (tweet-service → outbox → Redis Stream → fan-out
-        worker → your followees' feeds), so it won't include your own tweets — following is
-        directed, and self-follows are blocked. Check your profile to see what you've posted.
-      </p>
+
+      <div className="timeline-tabs">
+        <button className={tab === "followed" ? "active" : ""} onClick={() => setTab("followed")}>
+          Followed
+        </button>
+        <button className={tab === "random" ? "active" : ""} onClick={() => setTab("random")}>
+          Random
+        </button>
+      </div>
+
+      {tab === "followed" ? (
+        <p className="timeline-hint">
+          Fed by fan-out-on-write (tweet-service → outbox → Redis Stream → fan-out worker → your
+          followees' feeds), so it won't include your own tweets — following is directed, and
+          self-follows are blocked. Check your profile to see what you've posted.
+        </p>
+      ) : (
+        <p className="timeline-hint">
+          A sample of tweets from people you don't follow — good for finding someone new.
+        </p>
+      )}
+
       <button type="button" className="refresh-button" onClick={load} disabled={loading}>
         {loading ? "Refreshing..." : "Refresh"}
       </button>
@@ -48,7 +72,11 @@ export default function Timeline() {
           <TweetCard key={tweet.id} tweet={tweet} />
         ))}
         {!loading && tweets.length === 0 && (
-          <p>Your timeline is empty. Follow someone from their profile page to see their tweets here.</p>
+          <p>
+            {tab === "followed"
+              ? "Your timeline is empty. Follow someone from their profile page to see their tweets here."
+              : "Nothing left to discover right now — you're following everyone who's tweeted."}
+          </p>
         )}
       </div>
     </div>

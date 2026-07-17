@@ -55,6 +55,15 @@ export function listFollowing(userId) {
   return request(GATEWAY.user, `/users/${userId}/following`);
 }
 
+export function getTopFollowedUsers({ limit = 10 } = {}) {
+  return request(GATEWAY.user, `/users/top-followed?limit=${limit}`);
+}
+
+export function getRandomUsers({ limit = 10, exclude = [] } = {}) {
+  const excludeQuery = exclude.map((id) => `exclude=${id}`).join("&");
+  return request(GATEWAY.user, `/users/random?limit=${limit}${excludeQuery ? `&${excludeQuery}` : ""}`);
+}
+
 // tweet-service
 export function createTweet({ userId, content }) {
   return request(GATEWAY.tweet, "/tweets", {
@@ -92,6 +101,11 @@ export function unlikeTweet(tweetId, userId) {
   return request(GATEWAY.tweet, `/tweets/${tweetId}/likes/${userId}`, {
     method: "DELETE",
   });
+}
+
+export function getRandomTweets({ limit = 20, excludeUserIds = [] } = {}) {
+  const excludeQuery = excludeUserIds.map((id) => `exclude_user_ids=${id}`).join("&");
+  return request(GATEWAY.tweet, `/tweets/random?limit=${limit}${excludeQuery ? `&${excludeQuery}` : ""}`);
 }
 
 // timeline-service

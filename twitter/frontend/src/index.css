@@ -248,6 +248,28 @@ input {
 
 /* Timeline */
 
+.timeline-tabs {
+  display: flex;
+  gap: 8px;
+  margin: 4px 0 4px;
+}
+
+.timeline-tabs button {
+  padding: 8px 16px;
+  border: 1px solid #d4d4d8;
+  border-radius: 999px;
+  background: none;
+  color: #52525b;
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+
+.timeline-tabs button.active {
+  border-color: #3b82f6;
+  color: #1e3a8a;
+  background: #eff6ff;
+}
+
 .timeline-hint {
   color: #71717a;
   font-size: 0.85rem;
@@ -425,4 +447,75 @@ input {
 
 .user-list__empty {
   color: #71717a;
+}
+
+/* Discover */
+
+.discover-section {
+  margin-bottom: 32px;
+}
+
+.discover-section h3 {
+  margin: 0 0 2px;
+}
+
+.discover-section__hint {
+  color: #71717a;
+  font-size: 0.85rem;
+  margin: 0 0 14px;
+}
+
+.people-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.people-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid #e4e4e7;
+  border-radius: 12px;
+}
+
+.people-list__identity {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+}
+
+.people-list__identity span {
+  color: #71717a;
+  font-size: 0.85rem;
+}
+
+.people-list__count {
+  margin-left: auto;
+  white-space: nowrap;
+}
+
+.people-list li:hover {
+  border-color: #93c5fd;
+}
+
+.people-list button {
+  flex-shrink: 0;
+  padding: 6px 14px;
+  border: 1px solid #d4d4d8;
+  border-radius: 999px;
+  background: none;
+  color: #1e3a8a;
+  font-weight: 600;
+  font-size: 0.8rem;
+}
+
+.people-list button:hover {
+  background: #f4f4f5;
 }

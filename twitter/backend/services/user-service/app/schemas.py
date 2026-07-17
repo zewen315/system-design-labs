@@ -17,6 +17,10 @@ class UserOut(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class UserWithFollowerCount(UserOut):
+    follower_count: int
+
+
 class FollowOut(BaseModel):
     follower_id: int
     followee_id: int

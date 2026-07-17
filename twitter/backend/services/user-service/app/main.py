@@ -2,14 +2,14 @@ from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 
-from fastapi import Depends, FastAPI, HTTPException, Response
-from sqlalchemy import select
+from fastapi import Depends, FastAPI, HTTPException, Query, Response
+from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.database import engine, get_db
 from app.models import Base, Follow, User
-from app.schemas import FollowOut, UserCreate, UserOut
+from app.schemas import FollowOut, UserCreate, UserOut, UserWithFollowerCount
 
 
 def get_active_user(db: Session, user_id: int) -> User | None:
@@ -52,6 +52,44 @@ def get_user_by_username(username: str, db: Session = Depends(get_db)) -> User:
     if user is None or user.deactivated_at is not None:
         raise HTTPException(status_code=404, detail="User not found")
     return user
+
+
+@app.get("/users/top-followed", response_model=list[UserWithFollowerCount])
+def top_followed_users(
+    limit: int = Query(default=10, ge=1, le=50), db: Session = Depends(get_db)
+) -> list[UserWithFollowerCount]:
+    follower_count = func.count(Follow.follower_id).label("follower_count")
+    stmt = (
+        select(User, follower_count)
+        .join(Follow, Follow.followee_id == User.id)
+        .where(User.deactivated_at.is_(None))
+        .group_by(User.id)
+        .order_by(follower_count.desc())
+        .limit(limit)
+    )
+    return [
+        UserWithFollowerCount(
+            id=user.id,
+            username=user.username,
+            display_name=user.display_name,
+            created_at=user.created_at,
+            follower_count=count,
+        )
+        for user, count in db.execute(stmt).all()
+    ]
+
+
+@app.get("/users/random", response_model=list[UserOut])
+def random_users(
+    limit: int = Query(default=10, ge=1, le=50),
+    exclude: list[int] = Query(default=[]),
+    db: Session = Depends(get_db),
+) -> list[User]:
+    stmt = select(User).where(User.deactivated_at.is_(None))
+    if exclude:
+        stmt = stmt.where(User.id.notin_(exclude))
+    stmt = stmt.order_by(func.random()).limit(limit)
+    return list(db.scalars(stmt))
 
 
 @app.get("/users/{user_id}", response_model=UserOut)

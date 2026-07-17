@@ -2,7 +2,7 @@ from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
 from fastapi import Depends, FastAPI, HTTPException, Query, Response
-from sqlalchemy import select, update
+from sqlalchemy import func, select, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -59,6 +59,19 @@ def list_tweets_by_ids(
     if not ids:
         return []
     stmt = select(Tweet).where(Tweet.id.in_(ids))
+    return list(db.scalars(stmt))
+
+
+@app.get("/tweets/random", response_model=list[TweetOut])
+def random_tweets(
+    limit: int = Query(default=20, ge=1, le=100),
+    exclude_user_ids: list[int] = Query(default=[]),
+    db: Session = Depends(get_db),
+) -> list[Tweet]:
+    stmt = select(Tweet).where(Tweet.parent_tweet_id.is_(None))
+    if exclude_user_ids:
+        stmt = stmt.where(Tweet.user_id.notin_(exclude_user_ids))
+    stmt = stmt.order_by(func.random()).limit(limit)
     return list(db.scalars(stmt))
 
 
