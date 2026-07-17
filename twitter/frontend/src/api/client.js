@@ -76,6 +76,14 @@ export function listUserTweets(userId, { limit = 20, offset = 0 } = {}) {
   return request(GATEWAY.tweet, `/users/${userId}/tweets?limit=${limit}&offset=${offset}`);
 }
 
+export function listUserReplies(userId, { limit = 20, offset = 0 } = {}) {
+  return request(GATEWAY.tweet, `/users/${userId}/replies?limit=${limit}&offset=${offset}`);
+}
+
+export function listUserLikes(userId, { limit = 20, offset = 0 } = {}) {
+  return request(GATEWAY.tweet, `/users/${userId}/likes?limit=${limit}&offset=${offset}`);
+}
+
 export function createReply(tweetId, { userId, content }) {
   return request(GATEWAY.tweet, `/tweets/${tweetId}/replies`, {
     method: "POST",

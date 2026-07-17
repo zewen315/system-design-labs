@@ -209,8 +209,43 @@ def list_user_tweets(
 ) -> list[Tweet]:
     stmt = (
         select(Tweet)
-        .where(Tweet.user_id == user_id)
+        .where(Tweet.user_id == user_id, Tweet.parent_tweet_id.is_(None))
         .order_by(Tweet.created_at.desc())
+        .limit(limit)
+        .offset(offset)
+    )
+    return list(db.scalars(stmt))
+
+
+@app.get("/users/{user_id}/replies", response_model=list[TweetOut])
+def list_user_replies(
+    user_id: int,
+    limit: int = Query(default=20, ge=1, le=100),
+    offset: int = Query(default=0, ge=0),
+    db: Session = Depends(get_db),
+) -> list[Tweet]:
+    stmt = (
+        select(Tweet)
+        .where(Tweet.user_id == user_id, Tweet.parent_tweet_id.is_not(None))
+        .order_by(Tweet.created_at.desc())
+        .limit(limit)
+        .offset(offset)
+    )
+    return list(db.scalars(stmt))
+
+
+@app.get("/users/{user_id}/likes", response_model=list[TweetOut])
+def list_user_likes(
+    user_id: int,
+    limit: int = Query(default=20, ge=1, le=100),
+    offset: int = Query(default=0, ge=0),
+    db: Session = Depends(get_db),
+) -> list[Tweet]:
+    stmt = (
+        select(Tweet)
+        .join(Like, Like.tweet_id == Tweet.id)
+        .where(Like.user_id == user_id)
+        .order_by(Like.created_at.desc())
         .limit(limit)
         .offset(offset)
     )

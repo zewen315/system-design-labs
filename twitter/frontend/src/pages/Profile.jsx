@@ -5,6 +5,8 @@ import {
   getUser,
   listFollowers,
   listFollowing,
+  listUserLikes,
+  listUserReplies,
   listUserTweets,
   unfollowUser,
 } from "../api/client";
@@ -22,6 +24,8 @@ export default function Profile() {
   const { currentUser } = useUser();
   const [profile, setProfile] = useState(null);
   const [tweets, setTweets] = useState([]);
+  const [replies, setReplies] = useState([]);
+  const [likes, setLikes] = useState([]);
   const [followers, setFollowers] = useState([]);
   const [following, setFollowing] = useState([]);
   const [tab, setTab] = useState("tweets");
@@ -31,14 +35,19 @@ export default function Profile() {
   const load = useCallback(async () => {
     setError(null);
     try {
-      const [profileData, tweetData, followerData, followingData] = await Promise.all([
-        getUser(userId),
-        listUserTweets(userId),
-        listFollowers(userId),
-        listFollowing(userId),
-      ]);
+      const [profileData, tweetData, replyData, likeData, followerData, followingData] =
+        await Promise.all([
+          getUser(userId),
+          listUserTweets(userId),
+          listUserReplies(userId),
+          listUserLikes(userId),
+          listFollowers(userId),
+          listFollowing(userId),
+        ]);
       setProfile(profileData);
       setTweets(tweetData);
+      setReplies(replyData);
+      setLikes(likeData);
       setFollowers(followerData);
       setFollowing(followingData);
     } catch (err) {
@@ -75,6 +84,8 @@ export default function Profile() {
 
   return (
     <div className="page">
+      <div className="profile-banner" />
+
       <div className="profile-header">
         <div className="profile-header__top">
           <Avatar user={profile} size={72} />
@@ -99,6 +110,12 @@ export default function Profile() {
         <button className={tab === "tweets" ? "active" : ""} onClick={() => setTab("tweets")}>
           Tweets
         </button>
+        <button className={tab === "replies" ? "active" : ""} onClick={() => setTab("replies")}>
+          Replies
+        </button>
+        <button className={tab === "likes" ? "active" : ""} onClick={() => setTab("likes")}>
+          Likes
+        </button>
         <button className={tab === "followers" ? "active" : ""} onClick={() => setTab("followers")}>
           Followers
         </button>
@@ -113,6 +130,22 @@ export default function Profile() {
             <TweetCard key={tweet.id} tweet={tweet} />
           ))}
           {tweets.length === 0 && <p>No tweets yet.</p>}
+        </div>
+      )}
+      {tab === "replies" && (
+        <div className="tweet-list">
+          {replies.map((reply) => (
+            <TweetCard key={reply.id} tweet={reply} />
+          ))}
+          {replies.length === 0 && <p>No replies yet.</p>}
+        </div>
+      )}
+      {tab === "likes" && (
+        <div className="tweet-list">
+          {likes.map((tweet) => (
+            <TweetCard key={tweet.id} tweet={tweet} />
+          ))}
+          {likes.length === 0 && <p>No liked tweets yet.</p>}
         </div>
       )}
       {tab === "followers" && <UserList users={followers} emptyLabel="No followers yet." />}

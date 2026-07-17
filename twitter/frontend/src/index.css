@@ -459,6 +459,12 @@ input {
 
 /* Profile */
 
+.profile-banner {
+  height: 200px;
+  margin: -24px -24px 20px;
+  background: #e4e4e7;
+}
+
 .profile-header {
   margin-bottom: 20px;
 }
@@ -505,12 +511,15 @@ input {
 
 .profile-tabs {
   display: flex;
+  flex-wrap: nowrap;
   gap: 8px;
   margin-bottom: 16px;
+  overflow-x: auto;
   border-bottom: 1px solid #e4e4e7;
 }
 
 .profile-tabs button {
+  flex-shrink: 0;
   padding: 10px 4px;
   border: none;
   background: none;
