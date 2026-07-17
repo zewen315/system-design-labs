@@ -463,9 +463,26 @@ input {
   margin-bottom: 20px;
 }
 
+.profile-header__top {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 4px;
+}
+
+.profile-header__top h2 {
+  margin: 0;
+}
+
 .profile-username {
   color: #71717a;
-  margin: 2px 0 12px;
+  margin: 2px 0 0;
+}
+
+.profile-joined {
+  color: #71717a;
+  font-size: 0.85rem;
+  margin: 8px 0 12px;
 }
 
 .profile-stats {

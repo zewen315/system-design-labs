@@ -9,8 +9,13 @@ import {
   unfollowUser,
 } from "../api/client";
 import { useUser } from "../context/UserContext";
+import Avatar from "../components/Avatar";
 import TweetCard from "../components/TweetCard";
 import UserList from "../components/UserList";
+
+function formatJoinDate(iso) {
+  return new Date(iso).toLocaleDateString("en-US", { month: "long", year: "numeric" });
+}
 
 export default function Profile() {
   const { userId } = useParams();
@@ -71,8 +76,14 @@ export default function Profile() {
   return (
     <div className="page">
       <div className="profile-header">
-        <h2>{profile.display_name}</h2>
-        <p className="profile-username">@{profile.username}</p>
+        <div className="profile-header__top">
+          <Avatar user={profile} size={72} />
+          <div>
+            <h2>{profile.display_name}</h2>
+            <p className="profile-username">@{profile.username}</p>
+          </div>
+        </div>
+        <p className="profile-joined">Joined {formatJoinDate(profile.created_at)}</p>
         <div className="profile-stats">
           <span>{followers.length} followers</span>
           <span>{following.length} following</span>
