@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { createUser, getRandomUsers, getUserByUsername } from "../api/client";
 import { useUser } from "../context/UserContext";
 import Avatar from "../components/Avatar";
@@ -6,6 +7,7 @@ import AvatarUploadButton from "../components/AvatarUploadButton";
 
 export default function IdentityGate() {
   const { setCurrentUser } = useUser();
+  const navigate = useNavigate();
   const [mode, setMode] = useState("existing");
   const [username, setUsername] = useState("");
   const [displayName, setDisplayName] = useState("");
@@ -14,6 +16,11 @@ export default function IdentityGate() {
   const [pending, setPending] = useState(false);
   const [suggestions, setSuggestions] = useState([]);
   const [suggestionsLoading, setSuggestionsLoading] = useState(true);
+
+  function login(user) {
+    setCurrentUser(user);
+    navigate("/", { replace: true });
+  }
 
   useEffect(() => {
     getRandomUsers({ limit: 3 })
@@ -28,7 +35,7 @@ export default function IdentityGate() {
     setPending(true);
     try {
       const user = await getUserByUsername(username.trim());
-      setCurrentUser(user);
+      login(user);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -46,7 +53,7 @@ export default function IdentityGate() {
         displayName: displayName.trim(),
         avatarUrl,
       });
-      setCurrentUser(user);
+      login(user);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -87,7 +94,7 @@ export default function IdentityGate() {
                 <ul className="identity-suggestions">
                   {suggestions.map((user) => (
                     <li key={user.id}>
-                      <button type="button" onClick={() => setCurrentUser(user)}>
+                      <button type="button" onClick={() => login(user)}>
                         <Avatar user={user} size={36} />
                         <span className="identity-suggestions__names">
                           <strong>{user.display_name}</strong>
