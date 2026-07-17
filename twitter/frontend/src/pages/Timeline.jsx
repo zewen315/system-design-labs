@@ -11,12 +11,17 @@ import ComposeBox from "../components/ComposeBox";
 import TweetCard from "../components/TweetCard";
 import EmptyState from "../components/EmptyState";
 
+const PAGE_SIZE = 20;
+
 export default function Timeline() {
   const { currentUser } = useUser();
   const [tab, setTab] = useState("followed");
   const [tweets, setTweets] = useState([]);
   const [likedIds, setLikedIds] = useState(new Set());
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [offset, setOffset] = useState(0);
+  const [hasMore, setHasMore] = useState(false);
   const [error, setError] = useState(null);
 
   const load = useCallback(async () => {
@@ -25,15 +30,19 @@ export default function Timeline() {
     try {
       let data;
       if (tab === "followed") {
-        data = await getTimeline(currentUser.id);
+        data = await getTimeline(currentUser.id, { limit: PAGE_SIZE, offset: 0 });
       } else {
         const following = await listFollowing(currentUser.id);
         const excludeUserIds = [currentUser.id, ...following.map((u) => u.id)];
-        data = await getRandomTweets({ excludeUserIds });
+        data = await getRandomTweets({ limit: PAGE_SIZE, excludeUserIds });
       }
       const liked = await getLikedTweetIds(currentUser.id, data.map((t) => t.id));
       setTweets(data);
       setLikedIds(new Set(liked));
+      setOffset(data.length);
+      // The "suggested" tab is a one-shot random sample (the API has no
+      // offset for it) — only "followed" has real pagination to continue.
+      setHasMore(tab === "followed" && data.length === PAGE_SIZE);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -44,6 +53,23 @@ export default function Timeline() {
   useEffect(() => {
     load();
   }, [load]);
+
+  async function loadMore() {
+    setLoadingMore(true);
+    try {
+      const page = await getTimeline(currentUser.id, { limit: PAGE_SIZE, offset });
+      const newIds = await getLikedTweetIds(currentUser.id, page.map((t) => t.id));
+
+      setTweets((prev) => [...prev, ...page]);
+      setOffset((prev) => prev + page.length);
+      setHasMore(page.length === PAGE_SIZE);
+      setLikedIds((prev) => new Set([...prev, ...newIds]));
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoadingMore(false);
+    }
+  }
 
   async function handlePost(content, imageUrl) {
     await createTweet({ userId: currentUser.id, content, imageUrl });
@@ -85,6 +111,23 @@ export default function Timeline() {
           />
         )}
       </div>
+
+      {hasMore && tweets.length > 0 && (
+        <button
+          type="button"
+          className="tweet-card__load-more"
+          onClick={loadMore}
+          disabled={loadingMore}
+        >
+          {loadingMore ? "Loading..." : "Load more tweets"}
+        </button>
+      )}
+
+      {!hasMore && !loading && tweets.length > 0 && (
+        <p className="end-of-list">
+          {tab === "followed" ? "No more tweets." : "That's everyone for now."}
+        </p>
+      )}
     </div>
   );
 }

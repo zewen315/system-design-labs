@@ -20,6 +20,8 @@ import ReplyRow from "../components/ReplyRow";
 import PeopleList from "../components/PeopleList";
 import EmptyState from "../components/EmptyState";
 
+const PAGE_SIZE = 20;
+
 function formatJoinDate(iso) {
   return new Date(iso).toLocaleDateString("en-US", { month: "long", year: "numeric" });
 }
@@ -31,6 +33,13 @@ export default function Profile() {
   const [tweets, setTweets] = useState([]);
   const [replies, setReplies] = useState([]);
   const [likes, setLikes] = useState([]);
+  const [tweetsOffset, setTweetsOffset] = useState(0);
+  const [repliesOffset, setRepliesOffset] = useState(0);
+  const [likesOffset, setLikesOffset] = useState(0);
+  const [hasMoreTweets, setHasMoreTweets] = useState(false);
+  const [hasMoreReplies, setHasMoreReplies] = useState(false);
+  const [hasMoreLikes, setHasMoreLikes] = useState(false);
+  const [loadingMoreTab, setLoadingMoreTab] = useState(false);
   const [likedIds, setLikedIds] = useState(new Set());
   const [followers, setFollowers] = useState([]);
   const [following, setFollowing] = useState([]);
@@ -43,12 +52,13 @@ export default function Profile() {
   const load = useCallback(async () => {
     setError(null);
     try {
+      const page = { limit: PAGE_SIZE, offset: 0 };
       const [profileData, tweetData, replyData, likeData, followerData, followingData, viewerFollowingData] =
         await Promise.all([
           getUser(userId),
-          listUserTweets(userId),
-          listUserReplies(userId),
-          listUserLikes(userId),
+          listUserTweets(userId, page),
+          listUserReplies(userId, page),
+          listUserLikes(userId, page),
           listFollowers(userId),
           listFollowing(userId),
           listFollowing(currentUser.id),
@@ -60,6 +70,12 @@ export default function Profile() {
       setTweets(tweetData);
       setReplies(replyData);
       setLikes(likeData);
+      setTweetsOffset(tweetData.length);
+      setRepliesOffset(replyData.length);
+      setLikesOffset(likeData.length);
+      setHasMoreTweets(tweetData.length === PAGE_SIZE);
+      setHasMoreReplies(replyData.length === PAGE_SIZE);
+      setHasMoreLikes(likeData.length === PAGE_SIZE);
       setFollowers(followerData);
       setFollowing(followingData);
       setViewerFollowingIds(new Set(viewerFollowingData.map((u) => u.id)));
@@ -72,6 +88,54 @@ export default function Profile() {
   useEffect(() => {
     load();
   }, [load]);
+
+  async function loadMoreTweets() {
+    setLoadingMoreTab(true);
+    try {
+      const page = await listUserTweets(userId, { limit: PAGE_SIZE, offset: tweetsOffset });
+      const newIds = await getLikedTweetIds(currentUser.id, page.map((t) => t.id));
+      setTweets((prev) => [...prev, ...page]);
+      setTweetsOffset((prev) => prev + page.length);
+      setHasMoreTweets(page.length === PAGE_SIZE);
+      setLikedIds((prev) => new Set([...prev, ...newIds]));
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoadingMoreTab(false);
+    }
+  }
+
+  async function loadMoreReplies() {
+    setLoadingMoreTab(true);
+    try {
+      const page = await listUserReplies(userId, { limit: PAGE_SIZE, offset: repliesOffset });
+      const newIds = await getLikedTweetIds(currentUser.id, page.map((t) => t.id));
+      setReplies((prev) => [...prev, ...page]);
+      setRepliesOffset((prev) => prev + page.length);
+      setHasMoreReplies(page.length === PAGE_SIZE);
+      setLikedIds((prev) => new Set([...prev, ...newIds]));
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoadingMoreTab(false);
+    }
+  }
+
+  async function loadMoreLikes() {
+    setLoadingMoreTab(true);
+    try {
+      const page = await listUserLikes(userId, { limit: PAGE_SIZE, offset: likesOffset });
+      const newIds = await getLikedTweetIds(currentUser.id, page.map((t) => t.id));
+      setLikes((prev) => [...prev, ...page]);
+      setLikesOffset((prev) => prev + page.length);
+      setHasMoreLikes(page.length === PAGE_SIZE);
+      setLikedIds((prev) => new Set([...prev, ...newIds]));
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoadingMoreTab(false);
+    }
+  }
 
   const isSelf = currentUser && String(currentUser.id) === String(userId);
   const isFollowing = currentUser && followers.some((f) => f.id === currentUser.id);
@@ -175,6 +239,20 @@ export default function Profile() {
           {tweets.length === 0 && <EmptyState message="No tweets yet." />}
         </div>
       )}
+      {tab === "tweets" && hasMoreTweets && tweets.length > 0 && (
+        <button
+          type="button"
+          className="tweet-card__load-more"
+          onClick={loadMoreTweets}
+          disabled={loadingMoreTab}
+        >
+          {loadingMoreTab ? "Loading..." : "Load more tweets"}
+        </button>
+      )}
+      {tab === "tweets" && !hasMoreTweets && tweets.length > 0 && (
+        <p className="end-of-list">No more tweets.</p>
+      )}
+
       {tab === "replies" && (
         <div className="reply-list">
           {replies.map((reply) => (
@@ -183,6 +261,20 @@ export default function Profile() {
           {replies.length === 0 && <EmptyState message="No replies yet." />}
         </div>
       )}
+      {tab === "replies" && hasMoreReplies && replies.length > 0 && (
+        <button
+          type="button"
+          className="tweet-card__load-more"
+          onClick={loadMoreReplies}
+          disabled={loadingMoreTab}
+        >
+          {loadingMoreTab ? "Loading..." : "Load more replies"}
+        </button>
+      )}
+      {tab === "replies" && !hasMoreReplies && replies.length > 0 && (
+        <p className="end-of-list">No more replies.</p>
+      )}
+
       {tab === "likes" && (
         <div className="tweet-list">
           {likes.map((tweet) => (
@@ -190,6 +282,19 @@ export default function Profile() {
           ))}
           {likes.length === 0 && <EmptyState message="No liked tweets yet." />}
         </div>
+      )}
+      {tab === "likes" && hasMoreLikes && likes.length > 0 && (
+        <button
+          type="button"
+          className="tweet-card__load-more"
+          onClick={loadMoreLikes}
+          disabled={loadingMoreTab}
+        >
+          {loadingMoreTab ? "Loading..." : "Load more likes"}
+        </button>
+      )}
+      {tab === "likes" && !hasMoreLikes && likes.length > 0 && (
+        <p className="end-of-list">No more likes.</p>
       )}
       {tab === "followers" && (
         <PeopleList
