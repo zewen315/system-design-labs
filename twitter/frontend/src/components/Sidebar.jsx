@@ -1,6 +1,8 @@
+import { useState } from "react";
 import { Link, NavLink } from "react-router-dom";
 import { useUser } from "../context/UserContext";
 import Avatar from "./Avatar";
+import ConfirmDialog from "./ConfirmDialog";
 import { BellIcon, HomeIcon, LogOutIcon, PeopleIcon, PersonIcon, SearchIcon } from "./icons";
 
 const LINKS = [
@@ -12,6 +14,7 @@ const LINKS = [
 
 export default function Sidebar() {
   const { currentUser, switchUser } = useUser();
+  const [confirmingLogout, setConfirmingLogout] = useState(false);
   if (!currentUser) return null;
 
   return (
@@ -34,7 +37,7 @@ export default function Sidebar() {
           <PersonIcon className="sidebar__icon" />
           Profile
         </NavLink>
-        <button type="button" onClick={switchUser}>
+        <button type="button" onClick={() => setConfirmingLogout(true)}>
           <LogOutIcon className="sidebar__icon" />
           Log out
         </button>
@@ -47,6 +50,15 @@ export default function Sidebar() {
           <span>@{currentUser.username}</span>
         </div>
       </Link>
+
+      <ConfirmDialog
+        open={confirmingLogout}
+        title="Log out?"
+        message={`You'll need to pick @${currentUser.username} (or another user) again to get back in.`}
+        confirmLabel="Log out"
+        onConfirm={switchUser}
+        onCancel={() => setConfirmingLogout(false)}
+      />
     </aside>
   );
 }

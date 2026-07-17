@@ -906,3 +906,70 @@ input {
 .people-list button:hover {
   background: #f4f4f5;
 }
+
+/* Confirm dialog */
+
+.confirm-dialog__backdrop {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 100;
+}
+
+.confirm-dialog {
+  width: 100%;
+  max-width: 340px;
+  margin: 16px;
+  padding: 20px;
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+}
+
+.confirm-dialog h3 {
+  margin: 0 0 8px;
+}
+
+.confirm-dialog p {
+  margin: 0 0 20px;
+  color: #52525b;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.confirm-dialog__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.confirm-dialog__cancel {
+  padding: 8px 16px;
+  border: 1px solid #d4d4d8;
+  border-radius: 999px;
+  background: none;
+  color: #3f3f46;
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+
+.confirm-dialog__cancel:hover {
+  background: #f4f4f5;
+}
+
+.confirm-dialog__confirm {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 999px;
+  background: #1e3a8a;
+  color: white;
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+
+.confirm-dialog__confirm:hover {
+  background: #17306e;
+}
