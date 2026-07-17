@@ -46,6 +46,14 @@ def create_user(user_in: UserCreate, db: Session = Depends(get_db)) -> User:
     return user
 
 
+@app.get("/users/by-username/{username}", response_model=UserOut)
+def get_user_by_username(username: str, db: Session = Depends(get_db)) -> User:
+    user = db.scalar(select(User).where(User.username == username))
+    if user is None or user.deactivated_at is not None:
+        raise HTTPException(status_code=404, detail="User not found")
+    return user
+
+
 @app.get("/users/{user_id}", response_model=UserOut)
 def get_user(user_id: int, db: Session = Depends(get_db)) -> User:
     user = get_active_user(db, user_id)

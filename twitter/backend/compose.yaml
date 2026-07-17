@@ -110,6 +110,17 @@ services:
       timeline-redis:
         condition: service_healthy
 
+  api-gateway:
+    image: nginx:1.27-alpine
+    volumes:
+      - ./gateway/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    ports:
+      - "8080:80"
+    depends_on:
+      - user-service
+      - tweet-service
+      - timeline-service
+
 volumes:
   tweet_db_data:
   user_db_data:
