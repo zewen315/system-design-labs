@@ -55,10 +55,6 @@ export function listFollowing(userId) {
   return request(GATEWAY.user, `/users/${userId}/following`);
 }
 
-export function getTopFollowedUsers({ limit = 10 } = {}) {
-  return request(GATEWAY.user, `/users/top-followed?limit=${limit}`);
-}
-
 export function getRandomUsers({ limit = 10, exclude = [] } = {}) {
   const excludeQuery = exclude.map((id) => `exclude=${id}`).join("&");
   return request(GATEWAY.user, `/users/random?limit=${limit}${excludeQuery ? `&${excludeQuery}` : ""}`);
