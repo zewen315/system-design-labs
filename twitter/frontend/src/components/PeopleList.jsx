@@ -1,8 +1,9 @@
 import { Link } from "react-router-dom";
 import Avatar from "./Avatar";
+import EmptyState from "./EmptyState";
 
 export default function PeopleList({ people, followingIds, pendingId, onToggle, emptyLabel, viewerId }) {
-  if (people.length === 0) return <p className="user-list__empty">{emptyLabel}</p>;
+  if (people.length === 0) return <EmptyState message={emptyLabel} />;
 
   return (
     <ul className="people-list">

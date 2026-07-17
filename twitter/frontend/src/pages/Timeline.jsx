@@ -9,6 +9,7 @@ import {
 import { useUser } from "../context/UserContext";
 import ComposeBox from "../components/ComposeBox";
 import TweetCard from "../components/TweetCard";
+import EmptyState from "../components/EmptyState";
 
 export default function Timeline() {
   const { currentUser } = useUser();
@@ -74,11 +75,13 @@ export default function Timeline() {
           <TweetCard key={tweet.id} tweet={tweet} likedByMe={likedIds.has(tweet.id)} />
         ))}
         {!loading && tweets.length === 0 && (
-          <p>
-            {tab === "followed"
-              ? "Your timeline is empty. Follow someone from their profile page to see their tweets here."
-              : "Nothing left to discover right now — you're following everyone who's tweeted."}
-          </p>
+          <EmptyState
+            message={
+              tab === "followed"
+                ? "Your timeline is empty. Follow someone from their profile page to see their tweets here."
+                : "Nothing left to discover right now — you're following everyone who's tweeted."
+            }
+          />
         )}
       </div>
     </div>

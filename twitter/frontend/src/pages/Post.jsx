@@ -5,6 +5,7 @@ import { useUser } from "../context/UserContext";
 import ComposeBox from "../components/ComposeBox";
 import TweetCard from "../components/TweetCard";
 import ReplyRow from "../components/ReplyRow";
+import EmptyState from "../components/EmptyState";
 import { ArrowLeftIcon } from "../components/icons";
 
 const REPLIES_PAGE_SIZE = 20;
@@ -100,7 +101,7 @@ export default function Post() {
         ))}
       </div>
 
-      {replies.length === 0 && <p>No replies yet.</p>}
+      {replies.length === 0 && <EmptyState message="No replies yet." />}
 
       {hasMoreReplies && replies.length > 0 && (
         <button

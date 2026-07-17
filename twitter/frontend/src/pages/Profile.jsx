@@ -18,6 +18,7 @@ import AvatarUploadButton from "../components/AvatarUploadButton";
 import TweetCard from "../components/TweetCard";
 import ReplyRow from "../components/ReplyRow";
 import PeopleList from "../components/PeopleList";
+import EmptyState from "../components/EmptyState";
 
 function formatJoinDate(iso) {
   return new Date(iso).toLocaleDateString("en-US", { month: "long", year: "numeric" });
@@ -172,7 +173,7 @@ export default function Profile() {
           {tweets.map((tweet) => (
             <TweetCard key={tweet.id} tweet={tweet} likedByMe={likedIds.has(tweet.id)} />
           ))}
-          {tweets.length === 0 && <p>No tweets yet.</p>}
+          {tweets.length === 0 && <EmptyState message="No tweets yet." />}
         </div>
       )}
       {tab === "replies" && (
@@ -180,7 +181,7 @@ export default function Profile() {
           {replies.map((reply) => (
             <ReplyRow key={reply.id} tweet={reply} likedByMe={likedIds.has(reply.id)} showParentLink />
           ))}
-          {replies.length === 0 && <p>No replies yet.</p>}
+          {replies.length === 0 && <EmptyState message="No replies yet." />}
         </div>
       )}
       {tab === "likes" && (
@@ -188,7 +189,7 @@ export default function Profile() {
           {likes.map((tweet) => (
             <TweetCard key={tweet.id} tweet={tweet} likedByMe={likedIds.has(tweet.id)} />
           ))}
-          {likes.length === 0 && <p>No liked tweets yet.</p>}
+          {likes.length === 0 && <EmptyState message="No liked tweets yet." />}
         </div>
       )}
       {tab === "followers" && (
