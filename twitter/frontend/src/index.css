@@ -177,6 +177,16 @@ input {
   align-self: flex-start;
 }
 
+.right-panel__close {
+  display: none;
+}
+
+/* Desktop: no floating toggle or backdrop — the panel is always visible. */
+.right-panel-toggle,
+.right-panel-backdrop {
+  display: none;
+}
+
 .widget-card {
   padding: 16px;
   border: 1px solid #e4e4e7;
@@ -844,9 +854,9 @@ input {
 /* Profile */
 
 .profile-banner {
-  height: 200px;
-  margin: -24px -24px 20px;
-  background: #e4e4e7;
+  height: 150px;
+  margin: -24px -24px 0;
+  background: linear-gradient(135deg, #dbe4ee, #eef0f2);
 }
 
 .profile-header {
@@ -854,14 +864,20 @@ input {
 }
 
 .profile-header__top {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  margin-bottom: 4px;
+  /* Half the avatar's total visual height (88px avatar + 4px ring each
+     side = 96px) pulls up over the banner's bottom edge, so it overlaps
+     the grey area the way LinkedIn/Twitter profile headers do instead of
+     sitting entirely below it. */
+  margin-top: -48px;
+  margin-bottom: 12px;
 }
 
-.profile-header__top h2 {
-  margin: 0;
+.profile-header__top .avatar {
+  border: 4px solid white;
+}
+
+.profile-header > h2 {
+  margin: 0 0 2px;
 }
 
 .profile-username {
@@ -1047,13 +1063,84 @@ input {
   background: #17306e;
 }
 
-/* Mobile: right panel drops out, feed goes full-width, sidebar becomes a
-   fixed bottom tab bar instead of a left rail (matches how Twitter's own
-   mobile web behaves, rather than trying to shrink a 220px vertical nav
-   into a ~375px viewport). */
+/* Mobile: right panel becomes an off-canvas drawer behind a floating toggle
+   button instead of just disappearing — the "About this site" / "Who to
+   follow" content is still reachable, just not competing for space with the
+   feed. Sidebar becomes a fixed bottom tab bar instead of a left rail
+   (matches how Twitter's own mobile web behaves, rather than trying to
+   shrink a 220px vertical nav into a ~375px viewport). */
 @media (max-width: 768px) {
   .right-panel {
-    display: none;
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: min(300px, 82vw);
+    height: 100vh;
+    overflow-y: auto;
+    background: white;
+    box-shadow: -8px 0 24px rgba(0, 0, 0, 0.18);
+    transform: translateX(100%);
+    transition: transform 0.25s ease;
+    z-index: 60;
+  }
+
+  .right-panel--open {
+    transform: translateX(0);
+  }
+
+  .right-panel__close {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    align-self: flex-end;
+    width: 32px;
+    height: 32px;
+    margin-bottom: -4px;
+    border: none;
+    border-radius: 50%;
+    background: #f4f4f5;
+    color: #3f3f46;
+    font-size: 1.2rem;
+    line-height: 1;
+  }
+
+  .right-panel-toggle {
+    display: flex;
+    position: fixed;
+    right: 16px;
+    bottom: 84px;
+    width: 48px;
+    height: 48px;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    border-radius: 50%;
+    background: #1e3a8a;
+    color: white;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25);
+    z-index: 55;
+  }
+
+  .right-panel-toggle__icon {
+    width: 22px;
+    height: 22px;
+  }
+
+  .right-panel-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.35);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s ease;
+    z-index: 59;
+  }
+
+  .right-panel-backdrop--open {
+    opacity: 1;
+    pointer-events: auto;
   }
 
   .app-main {
@@ -1063,7 +1150,7 @@ input {
   }
 
   .profile-banner {
-    margin: -16px -16px 20px;
+    margin: -16px -16px 0;
   }
 
   .sidebar {

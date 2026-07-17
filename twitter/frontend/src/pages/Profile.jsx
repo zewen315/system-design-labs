@@ -129,16 +129,14 @@ export default function Profile() {
       <div className="profile-header">
         <div className="profile-header__top">
           <div className="avatar-picker avatar-picker--large">
-            <Avatar user={profile} size={72} />
+            <Avatar user={profile} size={88} />
             {isSelf && (
               <AvatarUploadButton onUploaded={handleAvatarUploaded} onError={setError} />
             )}
           </div>
-          <div>
-            <h2>{profile.display_name}</h2>
-            <p className="profile-username">@{profile.username}</p>
-          </div>
         </div>
+        <h2>{profile.display_name}</h2>
+        <p className="profile-username">@{profile.username}</p>
         <p className="profile-joined">Joined {formatJoinDate(profile.created_at)}</p>
         <div className="profile-stats">
           <span>{followers.length} followers</span>
