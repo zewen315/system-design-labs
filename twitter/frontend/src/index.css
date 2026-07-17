@@ -74,6 +74,9 @@ input {
 }
 
 .sidebar__nav a {
+  display: flex;
+  align-items: center;
+  gap: 14px;
   padding: 12px;
   border-radius: 999px;
   font-size: 1.05rem;
@@ -90,6 +93,12 @@ input {
   background: #eff6ff;
 }
 
+.sidebar__icon {
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+}
+
 .sidebar__user {
   display: flex;
   align-items: center;
@@ -103,7 +112,9 @@ input {
   background: #f4f4f5;
 }
 
-.sidebar__avatar {
+/* Avatar (shared by the sidebar's current-user block and people lists) */
+
+.avatar {
   width: 40px;
   height: 40px;
   flex-shrink: 0;
@@ -111,7 +122,7 @@ input {
   object-fit: cover;
 }
 
-.sidebar__avatar--placeholder {
+.avatar--placeholder {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -567,19 +578,26 @@ input {
 
 .people-list__identity {
   display: flex;
-  align-items: baseline;
-  gap: 8px;
+  align-items: center;
+  gap: 10px;
   min-width: 0;
 }
 
-.people-list__identity span {
-  color: #71717a;
-  font-size: 0.85rem;
+.people-list__names {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
 }
 
-.people-list__count {
-  margin-left: auto;
+.people-list__names strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.people-list__names span {
+  color: #71717a;
+  font-size: 0.85rem;
 }
 
 .people-list li:hover {

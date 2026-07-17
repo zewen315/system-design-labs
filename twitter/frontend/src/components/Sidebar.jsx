@@ -1,11 +1,13 @@
 import { NavLink } from "react-router-dom";
 import { useUser } from "../context/UserContext";
+import Avatar from "./Avatar";
+import { BellIcon, HomeIcon, PeopleIcon, PersonIcon, SearchIcon } from "./icons";
 
 const LINKS = [
-  { to: "/", label: "Timeline", end: true },
-  { to: "/search", label: "Search" },
-  { to: "/notifications", label: "Notifications" },
-  { to: "/follow", label: "Follow" },
+  { to: "/", label: "Timeline", end: true, Icon: HomeIcon },
+  { to: "/search", label: "Search", Icon: SearchIcon },
+  { to: "/notifications", label: "Notifications", Icon: BellIcon },
+  { to: "/follow", label: "Follow", Icon: PeopleIcon },
 ];
 
 export default function Sidebar() {
@@ -19,32 +21,23 @@ export default function Sidebar() {
       </NavLink>
 
       <nav className="sidebar__nav">
-        {LINKS.map((link) => (
-          <NavLink
-            key={link.to}
-            to={link.to}
-            end={link.end}
-            className={({ isActive }) => (isActive ? "active" : "")}
-          >
-            {link.label}
+        {LINKS.map(({ to, label, end, Icon }) => (
+          <NavLink key={to} to={to} end={end} className={({ isActive }) => (isActive ? "active" : "")}>
+            <Icon className="sidebar__icon" />
+            {label}
           </NavLink>
         ))}
         <NavLink
           to={`/users/${currentUser.id}`}
           className={({ isActive }) => (isActive ? "active" : "")}
         >
+          <PersonIcon className="sidebar__icon" />
           Profile
         </NavLink>
       </nav>
 
       <div className="sidebar__user">
-        {currentUser.avatar_url ? (
-          <img src={currentUser.avatar_url} alt="" className="sidebar__avatar" />
-        ) : (
-          <div className="sidebar__avatar sidebar__avatar--placeholder">
-            {currentUser.display_name.charAt(0).toUpperCase()}
-          </div>
-        )}
+        <Avatar user={currentUser} size={40} />
         <div className="sidebar__identity">
           <strong>{currentUser.display_name}</strong>
           <span>@{currentUser.username}</span>
