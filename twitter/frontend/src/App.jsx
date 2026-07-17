@@ -3,7 +3,6 @@ import { UserProvider, useUser } from "./context/UserContext";
 import Sidebar from "./components/Sidebar";
 import IdentityGate from "./pages/IdentityGate";
 import Timeline from "./pages/Timeline";
-import TweetDetail from "./pages/TweetDetail";
 import Profile from "./pages/Profile";
 import Follow from "./pages/Follow";
 import Search from "./pages/Search";
@@ -22,7 +21,6 @@ function Gated() {
           <Route path="/search" element={<Search />} />
           <Route path="/notifications" element={<Notifications />} />
           <Route path="/follow" element={<Follow />} />
-          <Route path="/tweets/:tweetId" element={<TweetDetail />} />
           <Route path="/users/:userId" element={<Profile />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

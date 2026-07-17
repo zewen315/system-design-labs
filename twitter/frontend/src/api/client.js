@@ -68,10 +68,6 @@ export function createTweet({ userId, content }) {
   });
 }
 
-export function getTweet(tweetId) {
-  return request(GATEWAY.tweet, `/tweets/${tweetId}`);
-}
-
 export function listUserTweets(userId, { limit = 20, offset = 0 } = {}) {
   return request(GATEWAY.tweet, `/users/${userId}/tweets?limit=${limit}&offset=${offset}`);
 }

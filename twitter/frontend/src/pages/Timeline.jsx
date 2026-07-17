@@ -39,15 +39,14 @@ export default function Timeline() {
 
   return (
     <div className="page">
-      <h2>Home</h2>
-      <ComposeBox onSubmit={handlePost} />
+      <h2>Timeline</h2>
 
       <div className="timeline-tabs">
         <button className={tab === "followed" ? "active" : ""} onClick={() => setTab("followed")}>
           Followed
         </button>
-        <button className={tab === "random" ? "active" : ""} onClick={() => setTab("random")}>
-          Random
+        <button className={tab === "suggested" ? "active" : ""} onClick={() => setTab("suggested")}>
+          Suggested
         </button>
       </div>
 
@@ -62,6 +61,8 @@ export default function Timeline() {
           A sample of tweets from people you don't follow — good for finding someone new.
         </p>
       )}
+
+      <ComposeBox onSubmit={handlePost} />
 
       <button type="button" className="refresh-button" onClick={load} disabled={loading}>
         {loading ? "Refreshing..." : "Refresh"}
