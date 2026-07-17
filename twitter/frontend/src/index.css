@@ -385,6 +385,51 @@ input {
   gap: 14px;
 }
 
+/* Avatar picker (identity create form + own profile header) */
+
+.avatar-picker {
+  position: relative;
+  width: fit-content;
+}
+
+.avatar-upload-button {
+  position: absolute;
+  right: -4px;
+  bottom: -4px;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid white;
+  border-radius: 50%;
+  background: #1e3a8a;
+  color: white;
+}
+
+.avatar-upload-button:hover {
+  background: #17306e;
+}
+
+.avatar-upload-button:disabled {
+  opacity: 0.6;
+}
+
+.avatar-upload-button__icon {
+  width: 14px;
+  height: 14px;
+}
+
+.avatar-picker--large .avatar-upload-button {
+  width: 32px;
+  height: 32px;
+}
+
+.avatar-picker--large .avatar-upload-button__icon {
+  width: 16px;
+  height: 16px;
+}
+
 .identity-card label {
   display: flex;
   flex-direction: column;

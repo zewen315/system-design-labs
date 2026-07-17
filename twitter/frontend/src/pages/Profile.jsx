@@ -10,9 +10,11 @@ import {
   listUserReplies,
   listUserTweets,
   unfollowUser,
+  updateAvatar,
 } from "../api/client";
 import { useUser } from "../context/UserContext";
 import Avatar from "../components/Avatar";
+import AvatarUploadButton from "../components/AvatarUploadButton";
 import TweetCard from "../components/TweetCard";
 import ReplyRow from "../components/ReplyRow";
 import PeopleList from "../components/PeopleList";
@@ -23,7 +25,7 @@ function formatJoinDate(iso) {
 
 export default function Profile() {
   const { userId } = useParams();
-  const { currentUser } = useUser();
+  const { currentUser, setCurrentUser } = useUser();
   const [profile, setProfile] = useState(null);
   const [tweets, setTweets] = useState([]);
   const [replies, setReplies] = useState([]);
@@ -89,6 +91,16 @@ export default function Profile() {
     }
   }
 
+  async function handleAvatarUploaded(newAvatarUrl) {
+    try {
+      const updated = await updateAvatar(currentUser.id, newAvatarUrl);
+      setProfile(updated);
+      setCurrentUser(updated);
+    } catch (err) {
+      setError(err.message);
+    }
+  }
+
   async function toggleFollowPerson(personId) {
     setRowPendingId(personId);
     try {
@@ -114,7 +126,12 @@ export default function Profile() {
 
       <div className="profile-header">
         <div className="profile-header__top">
-          <Avatar user={profile} size={72} />
+          <div className="avatar-picker avatar-picker--large">
+            <Avatar user={profile} size={72} />
+            {isSelf && (
+              <AvatarUploadButton onUploaded={handleAvatarUploaded} onError={setError} />
+            )}
+          </div>
           <div>
             <h2>{profile.display_name}</h2>
             <p className="profile-username">@{profile.username}</p>

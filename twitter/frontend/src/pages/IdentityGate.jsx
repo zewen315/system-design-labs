@@ -2,12 +2,14 @@ import { useEffect, useState } from "react";
 import { createUser, getRandomUsers, getUserByUsername } from "../api/client";
 import { useUser } from "../context/UserContext";
 import Avatar from "../components/Avatar";
+import AvatarUploadButton from "../components/AvatarUploadButton";
 
 export default function IdentityGate() {
   const { setCurrentUser } = useUser();
   const [mode, setMode] = useState("existing");
   const [username, setUsername] = useState("");
   const [displayName, setDisplayName] = useState("");
+  const [avatarUrl, setAvatarUrl] = useState(null);
   const [error, setError] = useState(null);
   const [pending, setPending] = useState(false);
   const [suggestions, setSuggestions] = useState([]);
@@ -39,7 +41,11 @@ export default function IdentityGate() {
     setError(null);
     setPending(true);
     try {
-      const user = await createUser({ username: username.trim(), displayName: displayName.trim() });
+      const user = await createUser({
+        username: username.trim(),
+        displayName: displayName.trim(),
+        avatarUrl,
+      });
       setCurrentUser(user);
     } catch (err) {
       setError(err.message);
@@ -117,6 +123,11 @@ export default function IdentityGate() {
           </>
         ) : (
           <form onSubmit={handleCreate}>
+            <div className="avatar-picker">
+              <Avatar user={{ display_name: displayName || "?", avatar_url: avatarUrl }} size={64} />
+              <AvatarUploadButton onUploaded={setAvatarUrl} onError={setError} />
+            </div>
+
             <label>
               User ID
               <input

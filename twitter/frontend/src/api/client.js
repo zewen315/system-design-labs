@@ -20,10 +20,24 @@ async function request(base, path, options = {}) {
 }
 
 // user-service
-export function createUser({ username, displayName }) {
+export function createUser({ username, displayName, avatarUrl }) {
   return request(GATEWAY.user, "/users", {
     method: "POST",
-    body: JSON.stringify({ username, display_name: displayName }),
+    body: JSON.stringify({ username, display_name: displayName, avatar_url: avatarUrl }),
+  });
+}
+
+export function getAvatarUploadUrl(contentType) {
+  return request(GATEWAY.user, "/users/avatar-upload-url", {
+    method: "POST",
+    body: JSON.stringify({ content_type: contentType }),
+  });
+}
+
+export function updateAvatar(userId, avatarUrl) {
+  return request(GATEWAY.user, `/users/${userId}/avatar`, {
+    method: "PATCH",
+    body: JSON.stringify({ avatar_url: avatarUrl }),
   });
 }
 

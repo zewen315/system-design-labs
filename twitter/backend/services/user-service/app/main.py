@@ -46,7 +46,9 @@ def health() -> dict[str, str]:
 
 @app.post("/users", response_model=UserOut, status_code=201)
 def create_user(user_in: UserCreate, db: Session = Depends(get_db)) -> User:
-    user = User(username=user_in.username, display_name=user_in.display_name)
+    user = User(
+        username=user_in.username, display_name=user_in.display_name, avatar_url=user_in.avatar_url
+    )
     db.add(user)
     try:
         db.commit()
