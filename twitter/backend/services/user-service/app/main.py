@@ -4,7 +4,7 @@ from datetime import datetime, timezone
 
 import httpx
 from fastapi import Depends, FastAPI, HTTPException, Query, Response
-from sqlalchemy import func, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -106,6 +106,26 @@ def random_users(
     return list(db.scalars(stmt))
 
 
+@app.get("/users/search", response_model=list[UserOut])
+def search_users(
+    q: str = Query(min_length=1),
+    limit: int = Query(default=20, ge=1, le=100),
+    db: Session = Depends(get_db),
+) -> list[User]:
+    # Usernames/display names are short identifiers, not prose - a substring
+    # match is what people expect when searching "@mar" for maria_lopez, so
+    # ILIKE is the right tool here rather than tsvector full-text search.
+    pattern = f"%{q}%"
+    stmt = (
+        select(User)
+        .where(User.deactivated_at.is_(None))
+        .where(or_(User.username.ilike(pattern), User.display_name.ilike(pattern)))
+        .order_by(User.username)
+        .limit(limit)
+    )
+    return list(db.scalars(stmt))
+
+
 @app.post("/users/avatar-upload-url", response_model=ImageUploadResponse)
 def get_avatar_upload_url(body: ImageUploadRequest) -> ImageUploadResponse:
     try:
@@ -173,6 +193,19 @@ def follow_user(
     try:
         httpx.post(
             f"{settings.timeline_service_url}/users/{follower_id}/backfill/{followee_id}",
+            timeout=5.0,
+        )
+    except httpx.HTTPError:
+        pass
+
+    # Same best-effort posture as the backfill call above. Follows are far
+    # lower-volume than likes/tweets, so a synchronous call here is
+    # proportionate — not worth a whole second outbox+relay+stream just for
+    # this one event type.
+    try:
+        httpx.post(
+            f"{settings.timeline_service_url}/users/{followee_id}/notifications",
+            json={"type": "follow", "actor_user_id": follower_id},
             timeout=5.0,
         )
     except httpx.HTTPError:

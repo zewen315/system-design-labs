@@ -11,6 +11,7 @@ class Settings(BaseSettings):
     fanout_consumer_group: str = "timeline-fanout"
     fanout_consumer_name: str = "timeline-fanout-worker"
     feed_max_size: int = 800
+    notification_max_size: int = 100
 
 
 settings = Settings()

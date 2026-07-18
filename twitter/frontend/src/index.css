@@ -104,6 +104,29 @@ input {
   flex-shrink: 0;
 }
 
+.sidebar__icon-wrap {
+  position: relative;
+  display: inline-flex;
+}
+
+.sidebar__badge {
+  position: absolute;
+  top: -6px;
+  right: -8px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: #dc2626;
+  color: white;
+  font-size: 0.62rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
 .sidebar__user {
   display: flex;
   align-items: center;
@@ -244,6 +267,41 @@ input {
 
 .page h2 {
   margin: 0 0 16px;
+}
+
+.search-form {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.search-form input {
+  flex: 1;
+  min-width: 0;
+  padding: 10px 14px;
+  border: 1px solid #d4d4d8;
+  border-radius: 999px;
+  font-size: 0.95rem;
+}
+
+.search-form input:focus {
+  outline: none;
+  border-color: #3b82f6;
+}
+
+.search-form button {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 999px;
+  background: #1e3a8a;
+  color: white;
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+
+.search-form button:disabled {
+  opacity: 0.6;
+  cursor: default;
 }
 
 .post-header {
@@ -849,6 +907,57 @@ input {
 .reply-row button.liked,
 .reply-row button.liked:hover {
   color: #e11d48;
+}
+
+/* Notifications */
+
+.notification-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.notification-row {
+  display: flex;
+  gap: 12px;
+  padding: 12px 8px;
+  border-bottom: 1px solid #e4e4e7;
+  color: inherit;
+}
+
+.notification-row:hover {
+  background: #fafafa;
+}
+
+.notification-row--unread {
+  background: #eff6ff;
+}
+
+.notification-row--unread:hover {
+  background: #e0edfe;
+}
+
+.notification-row__body {
+  flex: 1;
+  min-width: 0;
+}
+
+.notification-row__text {
+  margin: 0 0 2px;
+  font-size: 0.9rem;
+}
+
+.notification-row__snippet {
+  margin: 0 0 4px;
+  padding: 6px 10px;
+  border-left: 2px solid #d4d4d8;
+  color: #52525b;
+  font-size: 0.85rem;
+  line-height: 1.4;
+}
+
+.notification-row__time {
+  color: #a1a1aa;
+  font-size: 0.78rem;
 }
 
 /* Profile */

@@ -76,6 +76,10 @@ export function getRandomUsers({ limit = 10, exclude = [] } = {}) {
   return request(GATEWAY.user, `/users/random?limit=${limit}${excludeQuery ? `&${excludeQuery}` : ""}`);
 }
 
+export function searchUsers(q, { limit = 20 } = {}) {
+  return request(GATEWAY.user, `/users/search?q=${encodeURIComponent(q)}&limit=${limit}`);
+}
+
 // tweet-service
 export function createTweet({ userId, content, imageUrl }) {
   return request(GATEWAY.tweet, "/tweets", {
@@ -150,7 +154,26 @@ export function getRandomTweets({ limit = 20, excludeUserIds = [] } = {}) {
   return request(GATEWAY.tweet, `/tweets/random?limit=${limit}${excludeQuery ? `&${excludeQuery}` : ""}`);
 }
 
+export function searchTweets(q, { limit = 20, offset = 0 } = {}) {
+  return request(GATEWAY.tweet, `/tweets/search?q=${encodeURIComponent(q)}&limit=${limit}&offset=${offset}`);
+}
+
 // timeline-service
 export function getTimeline(userId, { limit = 20, offset = 0 } = {}) {
   return request(GATEWAY.timeline, `/users/${userId}/timeline?limit=${limit}&offset=${offset}`);
+}
+
+export function getNotifications(userId, { limit = 20, offset = 0 } = {}) {
+  return request(GATEWAY.timeline, `/users/${userId}/notifications?limit=${limit}&offset=${offset}`);
+}
+
+export function getUnreadNotificationCount(userId) {
+  return request(GATEWAY.timeline, `/users/${userId}/notifications/unread-count`);
+}
+
+export function markNotificationsRead(userId, readThrough) {
+  return request(GATEWAY.timeline, `/users/${userId}/notifications/read`, {
+    method: "POST",
+    body: JSON.stringify({ read_through: readThrough }),
+  });
 }

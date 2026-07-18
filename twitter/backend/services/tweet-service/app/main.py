@@ -28,8 +28,14 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 app = FastAPI(title="tweet-service", lifespan=lifespan)
 
 
-def _enqueue_tweet_created(db: Session, tweet: Tweet) -> None:
-    """Write the outbox row in the same transaction as the tweet itself."""
+def _enqueue_tweet_created(db: Session, tweet: Tweet, parent_user_id: int | None = None) -> None:
+    """Write the outbox row in the same transaction as the tweet itself.
+
+    parent_user_id (the parent tweet's author, for replies) rides along so the
+    notification fan-out consumer can tell who to notify without a second
+    cross-service lookup - it's a local join here, already available at write
+    time.
+    """
     db.add(
         OutboxEvent(
             event_type="tweet_created",
@@ -38,6 +44,7 @@ def _enqueue_tweet_created(db: Session, tweet: Tweet) -> None:
                 "user_id": tweet.user_id,
                 "content": tweet.content,
                 "parent_tweet_id": tweet.parent_tweet_id,
+                "parent_user_id": parent_user_id,
                 "created_at": tweet.created_at.isoformat(),
             },
         )
@@ -92,6 +99,27 @@ def random_tweets(
     return list(db.scalars(stmt))
 
 
+@app.get("/tweets/search", response_model=list[TweetOut])
+def search_tweets(
+    q: str = Query(min_length=1),
+    limit: int = Query(default=20, ge=1, le=100),
+    offset: int = Query(default=0, ge=0),
+    db: Session = Depends(get_db),
+) -> list[Tweet]:
+    # to_tsvector() runs on every row scanned rather than off a stored/indexed
+    # column - fine at this table's size, but a real deployment would add a
+    # generated tsvector column + GIN index once search volume justified it.
+    tsquery = func.plainto_tsquery("english", q)
+    stmt = (
+        select(Tweet)
+        .where(func.to_tsvector("english", Tweet.content).op("@@")(tsquery))
+        .order_by(Tweet.created_at.desc())
+        .limit(limit)
+        .offset(offset)
+    )
+    return list(db.scalars(stmt))
+
+
 @app.get("/tweets/{tweet_id}", response_model=TweetOut)
 def get_tweet(tweet_id: int, db: Session = Depends(get_db)) -> Tweet:
     tweet = db.get(Tweet, tweet_id)
@@ -127,7 +155,8 @@ def delete_tweet(tweet_id: int, db: Session = Depends(get_db)) -> Response:
 def create_reply(
     tweet_id: int, reply_in: TweetCreate, db: Session = Depends(get_db)
 ) -> Tweet:
-    if db.get(Tweet, tweet_id) is None:
+    parent = db.get(Tweet, tweet_id)
+    if parent is None:
         raise HTTPException(status_code=404, detail="Tweet not found")
     reply = Tweet(
         user_id=reply_in.user_id,
@@ -137,7 +166,7 @@ def create_reply(
     )
     db.add(reply)
     db.flush()
-    _enqueue_tweet_created(db, reply)
+    _enqueue_tweet_created(db, reply, parent_user_id=parent.user_id)
     db.execute(
         update(Tweet).where(Tweet.id == tweet_id).values(reply_count=Tweet.reply_count + 1)
     )
@@ -165,7 +194,8 @@ def list_replies(
 
 @app.post("/tweets/{tweet_id}/likes/{user_id}", response_model=LikeOut, status_code=201)
 def like_tweet(tweet_id: int, user_id: int, db: Session = Depends(get_db)) -> Like:
-    if db.get(Tweet, tweet_id) is None:
+    tweet = db.get(Tweet, tweet_id)
+    if tweet is None:
         raise HTTPException(status_code=404, detail="Tweet not found")
 
     like = Like(tweet_id=tweet_id, user_id=user_id)
@@ -178,6 +208,17 @@ def like_tweet(tweet_id: int, user_id: int, db: Session = Depends(get_db)) -> Li
 
     db.execute(
         update(Tweet).where(Tweet.id == tweet_id).values(like_count=Tweet.like_count + 1)
+    )
+    db.add(
+        OutboxEvent(
+            event_type="tweet_liked",
+            payload={
+                "tweet_id": tweet_id,
+                "tweet_user_id": tweet.user_id,
+                "actor_user_id": user_id,
+                "created_at": like.created_at.isoformat(),
+            },
+        )
     )
     db.commit()
     db.refresh(like)
