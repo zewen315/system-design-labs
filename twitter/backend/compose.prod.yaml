@@ -2,6 +2,7 @@ services:
   tweet-db:
     image: postgres:16-alpine
     command: postgres -c shared_buffers=32MB -c max_connections=20
+    restart: unless-stopped
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
@@ -16,6 +17,7 @@ services:
 
   tweet-service:
     build: ./services/tweet-service
+    restart: unless-stopped
     environment:
       DATABASE_URL: postgresql+psycopg://postgres:postgres@tweet-db:5432/tweets
       MINIO_INTERNAL_URL: http://minio:9000
@@ -32,6 +34,7 @@ services:
   tweet-outbox-relay:
     build: ./services/tweet-service
     command: ["uv", "run", "python", "-m", "app.outbox_relay"]
+    restart: unless-stopped
     environment:
       DATABASE_URL: postgresql+psycopg://postgres:postgres@tweet-db:5432/tweets
       REDIS_URL: redis://stream-redis:6379/0
@@ -43,6 +46,15 @@ services:
 
   stream-redis:
     image: redis:7-alpine
+    restart: unless-stopped
+    # The image's default redis.conf already has RDB save points enabled,
+    # but without a volume the snapshot file lives in the container's
+    # writable layer - `docker compose down` (removes containers, not just
+    # stops them) discards it exactly like it would any other unpersisted
+    # container state. Learned this the hard way: a stack-wide `down` here
+    # silently wiped the whole tweet-events stream and every timeline.
+    volumes:
+      - stream_redis_data:/data
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 2s
@@ -52,6 +64,7 @@ services:
   user-db:
     image: postgres:16-alpine
     command: postgres -c shared_buffers=32MB -c max_connections=20
+    restart: unless-stopped
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
@@ -66,6 +79,7 @@ services:
 
   user-service:
     build: ./services/user-service
+    restart: unless-stopped
     environment:
       DATABASE_URL: postgresql+psycopg://postgres:postgres@user-db:5432/users
       TIMELINE_SERVICE_URL: http://timeline-service:8000
@@ -83,6 +97,12 @@ services:
 
   timeline-redis:
     image: redis:7-alpine
+    restart: unless-stopped
+    # Same reasoning as stream-redis above - this holds every user's
+    # timeline and all notifications, and was losing both on every
+    # container recreation with no volume backing it.
+    volumes:
+      - timeline_redis_data:/data
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 2s
@@ -91,6 +111,7 @@ services:
 
   timeline-service:
     build: ./services/timeline-service
+    restart: unless-stopped
     environment:
       STREAM_REDIS_URL: redis://stream-redis:6379/0
       TIMELINE_REDIS_URL: redis://timeline-redis:6379/0
@@ -103,6 +124,7 @@ services:
   timeline-fanout-worker:
     build: ./services/timeline-service
     command: ["uv", "run", "python", "-m", "app.fanout_worker"]
+    restart: unless-stopped
     environment:
       STREAM_REDIS_URL: redis://stream-redis:6379/0
       TIMELINE_REDIS_URL: redis://timeline-redis:6379/0
@@ -114,19 +136,16 @@ services:
       timeline-redis:
         condition: service_healthy
 
-  # Not started until the droplet has been resized to have real headroom for
-  # this - a single-node OpenSearch JVM wants ~512MB-1GB of heap on top of
-  # what it needs for the rest (roughly double), which the original 1GB
-  # droplet couldn't absorb alongside Postgres x2, Redis x2, MinIO, and three
-  # other Python services. No host ports published, same as every other
-  # internal service here - only api-gateway is reachable from outside.
+  # No host ports published, same as every other internal service here —
+  # only api-gateway is reachable from outside. Heap is sized for a 2GB
+  # droplet; bump OPENSEARCH_JAVA_OPTS if this ever moves to a larger one.
   opensearch:
     image: opensearchproject/opensearch:2.19.1
+    restart: unless-stopped
     environment:
       discovery.type: single-node
       plugins.security.disabled: "true"
       OPENSEARCH_INITIAL_ADMIN_PASSWORD: "diQlaOF1tdhK3Oqni7hg!Aa1"
-      # Sized for a 2GB droplet - bump this if you resize larger.
       OPENSEARCH_JAVA_OPTS: "-Xms512m -Xmx512m"
     volumes:
       - opensearch_data:/usr/share/opensearch/data
@@ -138,6 +157,7 @@ services:
 
   search-service:
     build: ./services/search-service
+    restart: unless-stopped
     environment:
       OPENSEARCH_URL: http://opensearch:9200
       STREAM_REDIS_URL: redis://stream-redis:6379/0
@@ -152,6 +172,7 @@ services:
   search-indexer-worker:
     build: ./services/search-service
     command: ["uv", "run", "python", "-m", "app.indexer_worker"]
+    restart: unless-stopped
     environment:
       OPENSEARCH_URL: http://opensearch:9200
       STREAM_REDIS_URL: redis://stream-redis:6379/0
@@ -166,6 +187,7 @@ services:
   minio:
     image: minio/minio:latest
     command: server /data --console-address ":9001"
+    restart: unless-stopped
     environment:
       MINIO_ROOT_USER: minioadmin
       MINIO_ROOT_PASSWORD: 8cd82b3b3d9263e2f76f18cf7c518210
@@ -179,6 +201,7 @@ services:
 
   minio-init:
     image: minio/mc:latest
+    restart: "no"
     depends_on:
       minio:
         condition: service_healthy
@@ -188,10 +211,10 @@ services:
       mc mb --ignore-existing local/media &&
       mc anonymous set download local/media
       "
-    restart: "no"
 
   api-gateway:
     image: nginx:1.27-alpine
+    restart: unless-stopped
     volumes:
       - ./gateway/nginx.prod.conf:/etc/nginx/conf.d/default.conf:ro
       - ../frontend/dist:/usr/share/nginx/html:ro
@@ -212,3 +235,5 @@ volumes:
   user_db_data:
   minio_data:
   opensearch_data:
+  stream_redis_data:
+  timeline_redis_data:

@@ -99,6 +99,18 @@ def random_tweets(
     return list(db.scalars(stmt))
 
 
+@app.get("/tweets/all", response_model=list[TweetOut])
+def list_all_tweets(db: Session = Depends(get_db)) -> list[Tweet]:
+    """Unpaginated full listing for one-off backfills - e.g. replaying
+    tweet_created events onto the outbox stream to rebuild timelines or
+    search-service's index after Redis data is lost. Mirrors user-service's
+    GET /users/all; not used by any regular request path, fine at this
+    project's demo scale.
+    """
+    stmt = select(Tweet).order_by(Tweet.created_at.asc())
+    return list(db.scalars(stmt))
+
+
 @app.get("/tweets/{tweet_id}", response_model=TweetOut)
 def get_tweet(tweet_id: int, db: Session = Depends(get_db)) -> Tweet:
     tweet = db.get(Tweet, tweet_id)
