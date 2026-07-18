@@ -2,6 +2,7 @@ const GATEWAY = {
   user: "/api/user-service",
   tweet: "/api/tweet-service",
   timeline: "/api/timeline-service",
+  search: "/api/search-service",
 };
 
 async function request(base, path, options = {}) {
@@ -77,7 +78,7 @@ export function getRandomUsers({ limit = 10, exclude = [] } = {}) {
 }
 
 export function searchUsers(q, { limit = 20 } = {}) {
-  return request(GATEWAY.user, `/users/search?q=${encodeURIComponent(q)}&limit=${limit}`);
+  return request(GATEWAY.search, `/search/users?q=${encodeURIComponent(q)}&limit=${limit}`);
 }
 
 // tweet-service
@@ -155,7 +156,7 @@ export function getRandomTweets({ limit = 20, excludeUserIds = [] } = {}) {
 }
 
 export function searchTweets(q, { limit = 20, offset = 0 } = {}) {
-  return request(GATEWAY.tweet, `/tweets/search?q=${encodeURIComponent(q)}&limit=${limit}&offset=${offset}`);
+  return request(GATEWAY.search, `/search/tweets?q=${encodeURIComponent(q)}&limit=${limit}&offset=${offset}`);
 }
 
 // timeline-service

@@ -69,6 +69,7 @@ services:
     environment:
       DATABASE_URL: postgresql+psycopg://postgres:postgres@user-db:5432/users
       TIMELINE_SERVICE_URL: http://timeline-service:8000
+      SEARCH_SERVICE_URL: http://search-service:8000
       MINIO_INTERNAL_URL: http://minio:9000
       MINIO_PUBLIC_URL: https://twitter.zewenw.com
       MINIO_ACCESS_KEY: minioadmin
@@ -113,6 +114,55 @@ services:
       timeline-redis:
         condition: service_healthy
 
+  # Not started until the droplet has been resized to have real headroom for
+  # this - a single-node OpenSearch JVM wants ~512MB-1GB of heap on top of
+  # what it needs for the rest (roughly double), which the original 1GB
+  # droplet couldn't absorb alongside Postgres x2, Redis x2, MinIO, and three
+  # other Python services. No host ports published, same as every other
+  # internal service here - only api-gateway is reachable from outside.
+  opensearch:
+    image: opensearchproject/opensearch:2.19.1
+    environment:
+      discovery.type: single-node
+      plugins.security.disabled: "true"
+      OPENSEARCH_INITIAL_ADMIN_PASSWORD: "diQlaOF1tdhK3Oqni7hg!Aa1"
+      # Sized for a 2GB droplet - bump this if you resize larger.
+      OPENSEARCH_JAVA_OPTS: "-Xms512m -Xmx512m"
+    volumes:
+      - opensearch_data:/usr/share/opensearch/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:9200/_cluster/health || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  search-service:
+    build: ./services/search-service
+    environment:
+      OPENSEARCH_URL: http://opensearch:9200
+      STREAM_REDIS_URL: redis://stream-redis:6379/0
+      TWEET_SERVICE_URL: http://tweet-service:8000
+      USER_SERVICE_URL: http://user-service:8000
+    depends_on:
+      opensearch:
+        condition: service_healthy
+      stream-redis:
+        condition: service_healthy
+
+  search-indexer-worker:
+    build: ./services/search-service
+    command: ["uv", "run", "python", "-m", "app.indexer_worker"]
+    environment:
+      OPENSEARCH_URL: http://opensearch:9200
+      STREAM_REDIS_URL: redis://stream-redis:6379/0
+      TWEET_SERVICE_URL: http://tweet-service:8000
+      USER_SERVICE_URL: http://user-service:8000
+    depends_on:
+      opensearch:
+        condition: service_healthy
+      stream-redis:
+        condition: service_healthy
+
   minio:
     image: minio/minio:latest
     command: server /data --console-address ":9001"
@@ -154,9 +204,11 @@ services:
       - user-service
       - tweet-service
       - timeline-service
+      - search-service
       - minio
 
 volumes:
   tweet_db_data:
   user_db_data:
   minio_data:
+  opensearch_data:

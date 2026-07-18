@@ -75,6 +75,7 @@ services:
     environment:
       DATABASE_URL: postgresql+psycopg://postgres:postgres@user-db:5432/users
       TIMELINE_SERVICE_URL: http://timeline-service:8000
+      SEARCH_SERVICE_URL: http://search-service:8000
       MINIO_INTERNAL_URL: http://minio:9000
       MINIO_PUBLIC_URL: http://localhost:8080
       MINIO_ACCESS_KEY: minioadmin
@@ -125,6 +126,56 @@ services:
       timeline-redis:
         condition: service_healthy
 
+  opensearch:
+    image: opensearchproject/opensearch:2.19.1
+    environment:
+      discovery.type: single-node
+      plugins.security.disabled: "true"
+      # Required just to pass the image's own startup precondition check,
+      # even with the security plugin disabled above (the entrypoint script
+      # checks for this var before it checks whether security is enabled at
+      # all). It's never actually enforced since the plugin is off.
+      OPENSEARCH_INITIAL_ADMIN_PASSWORD: "Twitterlab_dev_2025!"
+      OPENSEARCH_JAVA_OPTS: "-Xms512m -Xmx512m"
+    ports:
+      - "9200:9200"
+    volumes:
+      - opensearch_data:/usr/share/opensearch/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:9200/_cluster/health || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  search-service:
+    build: ./services/search-service
+    environment:
+      OPENSEARCH_URL: http://opensearch:9200
+      STREAM_REDIS_URL: redis://stream-redis:6379/0
+      TWEET_SERVICE_URL: http://tweet-service:8000
+      USER_SERVICE_URL: http://user-service:8000
+    ports:
+      - "8003:8000"
+    depends_on:
+      opensearch:
+        condition: service_healthy
+      stream-redis:
+        condition: service_healthy
+
+  search-indexer-worker:
+    build: ./services/search-service
+    command: ["uv", "run", "python", "-m", "app.indexer_worker"]
+    environment:
+      OPENSEARCH_URL: http://opensearch:9200
+      STREAM_REDIS_URL: redis://stream-redis:6379/0
+      TWEET_SERVICE_URL: http://tweet-service:8000
+      USER_SERVICE_URL: http://user-service:8000
+    depends_on:
+      opensearch:
+        condition: service_healthy
+      stream-redis:
+        condition: service_healthy
+
   minio:
     image: minio/minio:latest
     command: server /data --console-address ":9001"
@@ -165,9 +216,11 @@ services:
       - user-service
       - tweet-service
       - timeline-service
+      - search-service
       - minio
 
 volumes:
   tweet_db_data:
   user_db_data:
   minio_data:
+  opensearch_data:

@@ -4,7 +4,7 @@ from datetime import datetime, timezone
 
 import httpx
 from fastapi import Depends, FastAPI, HTTPException, Query, Response
-from sqlalchemy import func, or_, select
+from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -56,7 +56,34 @@ def create_user(user_in: UserCreate, db: Session = Depends(get_db)) -> User:
         db.rollback()
         raise HTTPException(status_code=409, detail="Username already taken")
     db.refresh(user)
+
+    # Best-effort, same posture as the follow notification/backfill calls
+    # elsewhere in this service: users have no outbox of their own (account
+    # creation is rare compared to tweets), so this is a direct write to
+    # search-service's index rather than an event.
+    try:
+        httpx.post(
+            f"{settings.search_service_url}/users/{user.id}/index",
+            json={"username": user.username, "display_name": user.display_name},
+            timeout=5.0,
+        )
+    except httpx.HTTPError:
+        pass
+
     return user
+
+
+@app.get("/users/all", response_model=list[UserOut])
+def list_all_users(db: Session = Depends(get_db)) -> list[User]:
+    """Unpaginated full listing for one-off backfills - e.g. reindexing
+    search-service after it's introduced, or after its index is rebuilt.
+    Not used by any regular user-facing flow (that's what /users/random and
+    the bulk /users?ids= lookup are for), which is why there's no limit
+    here - fine at this project's demo scale, would need pagination if this
+    became a real per-request path.
+    """
+    stmt = select(User).where(User.deactivated_at.is_(None))
+    return list(db.scalars(stmt))
 
 
 @app.get("/users/by-username/{username}", response_model=UserOut)
@@ -106,23 +133,18 @@ def random_users(
     return list(db.scalars(stmt))
 
 
-@app.get("/users/search", response_model=list[UserOut])
-def search_users(
-    q: str = Query(min_length=1),
-    limit: int = Query(default=20, ge=1, le=100),
-    db: Session = Depends(get_db),
+@app.get("/users", response_model=list[UserOut])
+def list_users_by_ids(
+    ids: list[int] = Query(default=[]), db: Session = Depends(get_db)
 ) -> list[User]:
-    # Usernames/display names are short identifiers, not prose - a substring
-    # match is what people expect when searching "@mar" for maria_lopez, so
-    # ILIKE is the right tool here rather than tsvector full-text search.
-    pattern = f"%{q}%"
-    stmt = (
-        select(User)
-        .where(User.deactivated_at.is_(None))
-        .where(or_(User.username.ilike(pattern), User.display_name.ilike(pattern)))
-        .order_by(User.username)
-        .limit(limit)
-    )
+    """Bulk lookup by id - mirrors tweet-service's GET /tweets?ids=. Used by
+    search-service to hydrate ranked user ids from OpenSearch into full
+    UserOut objects (avoiding N individual round trips), the same ID-first
+    pattern timelines already use.
+    """
+    if not ids:
+        return []
+    stmt = select(User).where(User.id.in_(ids), User.deactivated_at.is_(None))
     return list(db.scalars(stmt))
 
 

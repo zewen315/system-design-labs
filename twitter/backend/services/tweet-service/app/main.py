@@ -99,27 +99,6 @@ def random_tweets(
     return list(db.scalars(stmt))
 
 
-@app.get("/tweets/search", response_model=list[TweetOut])
-def search_tweets(
-    q: str = Query(min_length=1),
-    limit: int = Query(default=20, ge=1, le=100),
-    offset: int = Query(default=0, ge=0),
-    db: Session = Depends(get_db),
-) -> list[Tweet]:
-    # to_tsvector() runs on every row scanned rather than off a stored/indexed
-    # column - fine at this table's size, but a real deployment would add a
-    # generated tsvector column + GIN index once search volume justified it.
-    tsquery = func.plainto_tsquery("english", q)
-    stmt = (
-        select(Tweet)
-        .where(func.to_tsvector("english", Tweet.content).op("@@")(tsquery))
-        .order_by(Tweet.created_at.desc())
-        .limit(limit)
-        .offset(offset)
-    )
-    return list(db.scalars(stmt))
-
-
 @app.get("/tweets/{tweet_id}", response_model=TweetOut)
 def get_tweet(tweet_id: int, db: Session = Depends(get_db)) -> Tweet:
     tweet = db.get(Tweet, tweet_id)
