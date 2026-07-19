@@ -1,14 +1,14 @@
 [project]
 name = "search-service"
 version = "0.1.0"
-description = "OpenSearch-backed search service for the toy Twitter system design lab"
+description = "Typesense-backed search service for the toy Twitter system design lab"
 requires-python = ">=3.12"
 dependencies = [
     "fastapi>=0.139.2",
     "httpx>=0.28.1",
-    "opensearch-py>=2.8.0",
     "pydantic-settings>=2.14.2",
     "redis>=8.0.1",
+    "typesense>=2.0.0",
     "uvicorn[standard]>=0.51.0",
 ]
 

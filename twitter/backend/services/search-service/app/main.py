@@ -5,13 +5,13 @@ import httpx
 from fastapi import FastAPI, Query
 
 from app.config import settings
-from app.opensearch_client import TWEETS_INDEX, USERS_INDEX, client, ensure_indices
 from app.schemas import TweetOut, UserIndexRequest, UserOut
+from app.typesense_client import TWEETS_COLLECTION, USERS_COLLECTION, client, ensure_collections
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
-    ensure_indices()
+    ensure_collections()
     yield
 
 
@@ -29,19 +29,20 @@ def search_tweets(
     limit: int = Query(default=20, ge=1, le=100),
     offset: int = Query(default=0, ge=0),
 ) -> list[TweetOut]:
-    result = client.search(
-        index=TWEETS_INDEX,
-        body={
-            "query": {"match": {"content": q}},
-            "from": offset,
-            "size": limit,
-        },
+    result = client.collections[TWEETS_COLLECTION].documents.search(
+        {
+            "q": q,
+            "query_by": "content",
+            "sort_by": "_text_match:desc,created_at:desc",
+            "offset": offset,
+            "limit": limit,
+        }
     )
-    tweet_ids = [hit["_source"]["tweet_id"] for hit in result["hits"]["hits"]]
+    tweet_ids = [hit["document"]["tweet_id"] for hit in result["hits"]]
     if not tweet_ids:
         return []
 
-    # OpenSearch only stores what's needed to search and rank - the
+    # Typesense only stores what's needed to search and rank - the
     # authoritative tweet data (like_count, reply_count, etc.) still comes
     # from tweet-service, the same ID-first hydration pattern timelines
     # already use, so search results can never show stale counts.
@@ -52,8 +53,8 @@ def search_tweets(
     resp.raise_for_status()
     tweets_by_id = {tweet["id"]: tweet for tweet in resp.json()}
 
-    # Re-order to match OpenSearch's relevance ranking - tweet-service's
-    # bulk lookup has no reason to preserve it.
+    # Re-order to match Typesense's relevance ranking - tweet-service's bulk
+    # lookup has no reason to preserve it.
     return [TweetOut(**tweets_by_id[tid]) for tid in tweet_ids if tid in tweets_by_id]
 
 
@@ -62,19 +63,15 @@ def search_users(
     q: str = Query(min_length=1),
     limit: int = Query(default=20, ge=1, le=100),
 ) -> list[UserOut]:
-    result = client.search(
-        index=USERS_INDEX,
-        body={
-            "query": {
-                "multi_match": {
-                    "query": q,
-                    "fields": ["username.autocomplete^2", "username", "display_name"],
-                }
-            },
-            "size": limit,
-        },
+    result = client.collections[USERS_COLLECTION].documents.search(
+        {
+            "q": q,
+            "query_by": "username,display_name",
+            "prefix": "true",
+            "limit": limit,
+        }
     )
-    user_ids = [hit["_source"]["user_id"] for hit in result["hits"]["hits"]]
+    user_ids = [hit["document"]["user_id"] for hit in result["hits"]]
     if not user_ids:
         return []
 
@@ -96,8 +93,11 @@ def index_user(user_id: int, body: UserIndexRequest) -> None:
     tweet-service's existing outbox + a second consumer group on the same
     stream (see indexer_worker.py) instead.
     """
-    client.index(
-        index=USERS_INDEX,
-        id=str(user_id),
-        body={"user_id": user_id, "username": body.username, "display_name": body.display_name},
+    client.collections[USERS_COLLECTION].documents.upsert(
+        {
+            "id": str(user_id),
+            "user_id": user_id,
+            "username": body.username,
+            "display_name": body.display_name,
+        }
     )

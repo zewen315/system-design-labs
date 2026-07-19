@@ -2,7 +2,10 @@ from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
-    opensearch_url: str = "http://localhost:9200"
+    typesense_host: str = "localhost"
+    typesense_port: str = "8108"
+    typesense_protocol: str = "http"
+    typesense_api_key: str = "xyz"
 
     stream_redis_url: str = "redis://localhost:6379/0"
     tweet_events_stream: str = "tweet-events"

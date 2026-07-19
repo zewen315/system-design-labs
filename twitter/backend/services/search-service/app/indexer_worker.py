@@ -1,10 +1,11 @@
 import json
+from datetime import datetime
 
 import redis
 
 from app.config import settings
-from app.opensearch_client import TWEETS_INDEX, client, ensure_indices
 from app.redis_clients import stream_redis
+from app.typesense_client import TWEETS_COLLECTION, client, ensure_collections
 
 
 def ensure_consumer_group() -> None:
@@ -27,15 +28,16 @@ def ensure_consumer_group() -> None:
 
 
 def index_tweet(payload: dict) -> None:
-    client.index(
-        index=TWEETS_INDEX,
-        id=str(payload["tweet_id"]),
-        body={
+    client.collections[TWEETS_COLLECTION].documents.upsert(
+        {
+            "id": str(payload["tweet_id"]),
             "tweet_id": payload["tweet_id"],
             "user_id": payload["user_id"],
             "content": payload["content"],
-            "created_at": payload["created_at"],
-        },
+            # Typesense's created_at field is int64 (unix seconds) so it can
+            # be a sort field - the outbox payload carries an ISO string.
+            "created_at": int(datetime.fromisoformat(payload["created_at"]).timestamp()),
+        }
     )
 
 
@@ -46,12 +48,13 @@ def handle_event(event_type: str, payload: dict) -> None:
 
 def main() -> None:
     # This worker and search-service's own FastAPI process both start as
-    # soon as OpenSearch is healthy - whichever writes first would otherwise
-    # auto-create the index with a dynamic mapping (no english analyzer),
-    # silently discarding the explicit mapping search-service's lifespan sets
-    # up. ensure_indices() is idempotent (checks existence first), so calling
-    # it from both places just means whichever process starts first wins.
-    ensure_indices()
+    # soon as Typesense is healthy - whichever writes first would otherwise
+    # auto-create the collection with an inferred schema, silently
+    # discarding the explicit one search-service's lifespan sets up.
+    # ensure_collections() is idempotent (checks existence first, and
+    # catches the loser's ObjectAlreadyExists), so calling it from both
+    # places just means whichever process starts first wins.
+    ensure_collections()
     ensure_consumer_group()
     print(f"search indexer started, consumer group={settings.indexer_consumer_group}")
 
