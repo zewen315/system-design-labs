@@ -119,6 +119,16 @@ export default function Search() {
 
       {error && <p className="error">{error}</p>}
 
+      {!searched && (
+        <div className="empty-state">
+          <svg viewBox="0 0 120 120" className="empty-state__illustration">
+            <circle cx="52" cy="52" r="30" fill="none" stroke="#d4d4d8" strokeWidth="6" />
+            <line x1="74" y1="74" x2="98" y2="98" stroke="#a1a1aa" strokeWidth="8" strokeLinecap="round" />
+          </svg>
+          <p>Search for tweets or people to get started.</p>
+        </div>
+      )}
+
       {searched && (
         <>
           <div className="profile-tabs">
